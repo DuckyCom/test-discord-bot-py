@@ -1,6 +1,8 @@
 import discord
 import os
 from dotenv import load_dotenv
+from flask import Flask
+import threading
 
 import plugins.dwbapi as dwb
 from embedBuilder import buildEmbed as emb
@@ -17,6 +19,13 @@ BOT_TOKEN = str(os.getenv("BOT_TOKEN"))
 client = discord.Client(intents=intents)
 commands = commandManager(client)
 commands.loadCommands()
+
+# Flask app for UptimeRobot pings
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running", 200
 
 @client.event
 async def on_ready():
@@ -54,4 +63,12 @@ async def on_message(message):
                 except Exception as e:
                     await message.channel.send(f'Error fetching build: {str(e)}')
 
-client.run(BOT_TOKEN)
+# Run Discord bot in a thread
+def run_bot():
+    client.run(BOT_TOKEN)
+
+bot_thread = threading.Thread(target=run_bot)
+bot_thread.start()
+
+# Run Flask app
+app.run(host='0.0.0.0', port=10000)
