@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask
 import threading
+from huggingface_hub import login
 
 import plugins.dwbapi as dwb
 from embedBuilder import buildEmbed as emb
@@ -16,6 +17,9 @@ intents.message_content = True
 #constants
 load_dotenv()
 BOT_TOKEN = str(os.getenv("BOT_TOKEN"))
+HF_TOKEN = os.getenv("HF_TOKEN")
+if HF_TOKEN:
+    login(HF_TOKEN)
 client = discord.Client(intents=intents)
 commands = commandManager(client)
 commands.loadCommands()
