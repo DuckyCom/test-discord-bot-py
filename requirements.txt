@@ -2,7 +2,7 @@ discord.py
 python-dotenv
 supabase
 sentence-transformers
-torch
+torch --index-url https://download.pytorch.org/whl/cpu
 numpy
 matplotlib
 requests
