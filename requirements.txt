@@ -1,0 +1,9 @@
+discord.py
+python-dotenv
+supabase
+sentence-transformers
+torch
+numpy
+matplotlib
+requests
+pandas
