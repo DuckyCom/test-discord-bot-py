@@ -1,6 +1,8 @@
 import discord
 import os
 import asyncio
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from dotenv import load_dotenv
 
 import plugins.dwbapi as dwb
@@ -20,6 +22,41 @@ client = discord.Client(intents=intents)
 commands = commandManager(client)
 interactions = interactionManager(client)
 commands.loadCommands()
+
+
+def _start_webserver_in_thread():
+    """Start a very small HTTP server in a daemon thread.
+
+    It responds 200 OK to GET / and GET /health. Uses PORT env var (defaults to 8080).
+    Run as a daemon thread so it doesn't block process shutdown.
+    """
+    port = int(os.getenv("PORT", "8080"))
+
+    class _HealthHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path in ("/", "/health"):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"OK")
+            else:
+                self.send_response(404)
+                self.end_headers()
+
+        # silence logging to stdout
+        def log_message(self, format, *args):
+            return
+
+    server = HTTPServer(("0.0.0.0", port), _HealthHandler)
+    print(f"Starting HTTP server on 0.0.0.0:{port} (health endpoint)")
+    try:
+        server.serve_forever()
+    except Exception as exc:
+        print("Webserver stopped:", exc)
+
+
+# Start webserver in background so Render (and UptimeRobot) can hit a port
+threading.Thread(target=_start_webserver_in_thread, daemon=True).start()
 
 @client.event
 async def on_ready():
