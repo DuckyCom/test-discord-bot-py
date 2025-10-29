@@ -43,6 +43,16 @@ def _start_webserver_in_thread():
                 self.send_response(404)
                 self.end_headers()
 
+        def do_HEAD(self):
+            # Respond to HEAD requests the same as GET but without a body.
+            if self.path in ("/", "/health"):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+            else:
+                self.send_response(404)
+                self.end_headers()
+
         # silence logging to stdout
         def log_message(self, format, *args):
             return
