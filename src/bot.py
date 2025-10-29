@@ -1,35 +1,25 @@
 import discord
 import os
+import asyncio
 from dotenv import load_dotenv
-from flask import Flask
-import threading
-from huggingface_hub import login
 
 import plugins.dwbapi as dwb
-from embedBuilder import buildEmbed as emb
+from plugins import statevograph as emb
 from handlers.commandManager import commandManager
-from plugins.shrineoforder import order
-from plugins.analytics import plot_breakdown
+from plugins.ehpbreakdown import plot_breakdown
+from handlers.interactionManager import interactionManager
+from utils.language_manager import language_manager
 
 intents = discord.Intents.default()
 intents.message_content = True
 
-#constants
+#setup
 load_dotenv()
 BOT_TOKEN = str(os.getenv("BOT_TOKEN"))
-HF_TOKEN = os.getenv("HF_TOKEN")
-if HF_TOKEN:
-    login(HF_TOKEN)
 client = discord.Client(intents=intents)
 commands = commandManager(client)
+interactions = interactionManager(client)
 commands.loadCommands()
-
-# Flask app for UptimeRobot pings
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Bot is running", 200
 
 @client.event
 async def on_ready():
@@ -41,38 +31,46 @@ async def on_message(message):
         return
     
     if message.content.startswith(commands.PREFIX):
-        await message.channel.send(embed = commands.processCommand(message), reference = message)
+        # Special handling for language command (requires admin permissions)
+        if message.content.startswith('.language ') or message.content == '.language':
+            # Check if in a guild and user has admin permissions
+            if message.guild:
+                if message.author.guild_permissions.administrator:
+                    # Extract language code from command
+                    lang_code = message.content[10:].strip().lower()  # Remove '.language '
+                    if lang_code in ['en', 'es']:
+                        language_manager.set_language(message.guild.id, lang_code)
+                    # Process command normally to show response (in a thread to avoid blocking)
+                    embed = await asyncio.to_thread(commands.processCommand, message)
+                    await message.channel.send(embed=embed, reference=message)
+                else:
+                    # User doesn't have permission
+                    guild_id = message.guild.id if message.guild else None
+                    lang = language_manager.get_language(guild_id)
+                    title = "🔒 Permission Denied" if lang == 'en' else "🔒 Permiso Denegado"
+                    desc = "Only administrators can change the bot language." if lang == 'en' else "Solo los administradores pueden cambiar el idioma del bot."
+                    embed = discord.Embed(title=title, description=desc, color=0xED4245)
+                    await message.channel.send(embed=embed, reference=message)
+            else:
+                # DM - just show the info (in a thread to avoid blocking)
+                embed = await asyncio.to_thread(commands.processCommand, message)
+                await message.channel.send(embed=embed, reference=message)
+        else:
+            # Normal command processing (in a thread to avoid blocking)
+            embed = await asyncio.to_thread(commands.processCommand, message)
+            await message.channel.send(embed=embed, reference=message)
     
     if message.type == discord.MessageType.reply:
         referenced = message.reference
         if referenced and referenced.resolved:
             replied_msg = referenced.resolved
             if 'https://deepwoken.co/builder?id=' in replied_msg.content:
-                try:
-                    link = replied_msg.content.split('https://deepwoken.co/builder?id=')[1].split()[0]
-                    build_id = link.split('&')[0]
-                    build = dwb.dwbBuild(build_id)
-                    if message.content.strip().lower() == 'analytics':
+                # Process interaction in a thread to avoid blocking
+                result = await asyncio.to_thread(interactions.processReply, message)
+                if result is not None:
+                    embed, file = result
+                    if embed is not None or file is not None:
+                        await message.channel.send(embed=embed, file=file, reference=message)
 
-                        buf = plot_breakdown(build, talentBase=dwb.talentBase)
-                        file = discord.File(buf, filename="ehp_plot.png")
-                        embed = discord.Embed(color=0xffffff)
-                        embed.set_image(url="attachment://ehp_plot.png")
-                        await message.channel.send(embed=embed, file=file, reference = message)
 
-                    elif message.content.strip().lower() == 'display':
-                        embeds = emb.get_deepwoken_build_embed(build_id)
-                        for embed in embeds:
-                            await message.channel.send(embed=embed, reference = message)
-                except Exception as e:
-                    await message.channel.send(f'Error fetching build: {str(e)}')
-
-# Run Discord bot in a thread
-def run_bot():
-    client.run(BOT_TOKEN)
-
-bot_thread = threading.Thread(target=run_bot)
-bot_thread.start()
-
-# Run Flask app
-app.run(host='0.0.0.0', port=10000)
+client.run(BOT_TOKEN)

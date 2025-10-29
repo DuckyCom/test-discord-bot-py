@@ -1,10 +1,10 @@
-discord.py
-python-dotenv
-supabase
-sentence-transformers
-torch --index-url https://download.pytorch.org/whl/cpu
-numpy
-matplotlib
-requests
-pandas
-flask
+# Dependencies
+discord.py==2.6.4
+python-dotenv==1.1.1
+rapidfuzz==3.13.0
+
+# HTTP Requests
+requests==2.32.5
+
+# Visualization
+matplotlib==3.9.4

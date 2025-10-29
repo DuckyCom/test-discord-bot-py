@@ -1,7 +1,9 @@
 from collections import defaultdict
-import pandas as pd
+import json
 
-racial_stats = pd.read_json('data/racialstats.json', typ='series').to_dict()
+# Load racial stats using native JSON (replaces pandas - saves ~57MB RAM)
+with open('data/racialstats.json', 'r', encoding='utf-8') as f:
+    racial_stats = json.load(f)
 
 attunements = ["Flamecharm", "Frostdraw", "Thundercall", "Galebreathe", "Shadowcast", "Ironsing", "Bloodrend"]
 

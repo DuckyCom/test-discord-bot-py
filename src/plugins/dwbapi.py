@@ -1,7 +1,7 @@
 import requests
-from handlers.backbone import fetch_table
+import handlers as process
 
-talentBase = fetch_table('talents')
+talentBase = process.fetch_table('talents')
 
 class dwbBuild:
     def __str__(self):
@@ -60,9 +60,10 @@ class dwbBuild:
                     break
         return hp
 
-    def ehp(self, params = {'dps':100, 'pen':50, 'kithp': 0, 'kitresis':50}):
+    def ehp(self, params = {'dps':100, 'pen':50, 'kithp': 112, 'kitresis':33}):
+        resis = self.scalePhys(params['kitresis'], self.talents, self.outfit)
         scaledDps = params['dps'] * self.resisCoefficient(params['pen'], 10, 50) if self.flags[3] else params['dps']
-        EHP = (scaledDps * (self.health + params['kithp']))/((scaledDps)*self.resisCoefficient(params['pen'], params['kitresis'], self.flags[0]))
+        EHP = (scaledDps * (self.health + params['kithp']))/((scaledDps)*self.resisCoefficient(params['pen'], resis, self.flags[0]))
         EHP *= ((30/(100 - self.flags[1]) + 0.7) if self.flags[1] != 0 else 1) * ((25/(100 - self.flags[2]) + 0.75 if self.flags[2] != 0 else 1))
         return round(EHP)
 
@@ -70,9 +71,20 @@ class dwbBuild:
     def resisCoefficient(cls ,pen ,res ,penres) -> float:
         return (1- ((res/100) * (1 - (pen * (1 - penres/100) / 100))))
     
+    @classmethod
+    def scalePhys(cls, kit, talents = {}, outfitName = None):
+        outfit = process.searchTableByName("outfits", outfitName)
+        outfitPhys = outfit.get('data', {}).get('resistances', {}).get('physical', 0) if outfit else 0
+        if "Padded Armor" in talents and "Steel Scales" in talents:
+            outfitPhys = outfitPhys + 3 - (3 * outfitPhys/100)
+
+        scaledPhys = outfitPhys + kit - (kit * outfitPhys/100)
+
+        return scaledPhys
+
+    
     @property
     def summary(self):
-        stat_fields = ['health', 'agility', 'posture', 'ether', 'carry load']
         stat_map = {
             'Base Health': 'health',
             'Passive Agility': 'passive agility',

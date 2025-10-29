@@ -1,2 +1,30 @@
 *.env.env
 .env
+.venv
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Bot configuration
+data/server_languages.json
+
+# Temporary cleanup scripts
+clear_slash_commands.py.venv
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*__pycache__*/
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
