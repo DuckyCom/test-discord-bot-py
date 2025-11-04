@@ -13,6 +13,7 @@ class dwbBuild:
         stats = data['stats']
         self.rawdata = response.json()
         self.name = stats['buildName']
+        self.oath = stats['meta']['Oath']
         self.desc = stats['buildDescription']
         self.talents = data['talents']
         self.pre = data['preShrine']

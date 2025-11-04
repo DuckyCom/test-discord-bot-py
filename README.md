@@ -30,17 +30,22 @@
 ## Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/miljyface/analytic-deepwoken.git
    cd analytic-deepwoken
    ```
+
 2. Create and activate a virtual environment:
+
    ```bash
    python3 -m venv venv
    source venv/bin/activate  # macOS/Linux
    venv\\Scripts\\activate  # Windows
    ```
+
 3. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -50,12 +55,15 @@
 ## Configuration
 
 1. Create a `.env` file in the project root with your Discord bot token:
+
    ```dotenv
     BOT_TOKEN = TOKEN HERE
     DATABASE_KEY= ACCESS KEY HERE
     DATABASE_URL = https://idyjvmmldtdvpklkzrgr.supabase.co
    ```
+
 2. Start the bot:
+
    ```bash
    python src/bot.py
    ```
@@ -86,6 +94,7 @@
 | --------------------------- | ---------------------------------------------------- |
 | `ehp`.                      | Calculates Effective Health Points of a full Phys and HP kit |
 | `stats`.                    | Displays the Stat Evolution diagram for visualisation of optimisation |
+| `validate`.                 | Validates the build against the Deepleague Rulebook |
 
 Please refer to [Interpretations](#interpretations) for a general guide on how to read the analytics.
 
@@ -95,7 +104,7 @@ Please refer to [Interpretations](#interpretations) for a general guide on how t
 
 ![what you'd see when you analyse stats](assets/evo_plot.webp)
 
-This graph is separated into three segments, **Attunement**, **Weapon**, and **Base**. Each segment contains non-zero stat categories, with three stems to each category, the magnitude of the stems denoting the investment. 
+This graph is separated into three segments, **Attunement**, **Weapon**, and **Base**. Each segment contains non-zero stat categories, with three stems to each category, the magnitude of the stems denoting the investment.
 
 - **Red**: Pre-Shrine
 - **Gray**: Immediately after Shrine of Order
@@ -119,7 +128,7 @@ The EHP testing scenarios are as follows:
 - **100 Enemy DPS**
 - **50% Enemy PEN**
 - Phys Kit: **112HP, 33% Phys from pips**
-- HP Kit: **154HP, 4% Phys from pips** 
+- HP Kit: **154HP, 4% Phys from pips**
 
 For transparency, this is the assumed kit for the ehp calculation.
 
@@ -150,6 +159,7 @@ Constant:
 - **Lookup Weapon (substring search)**:  `.weapon n's swor`
 - **Lookup Weapon (spellcheck)**: `.weapon gale hb`
 - **Analyze Build EHP**: `(replying to build link) ehp`
+
 ---
 
 ## Contributing

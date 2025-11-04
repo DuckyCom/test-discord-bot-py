@@ -321,10 +321,12 @@ TRANSLATIONS = {
         'en': (
             '`ehp` — Calculates Effective Health Points of a full Phys and HP kit (Reply to Build Link)\n'
             '`stats` — Displays the Stat Evolution diagram for optimisation (Reply to Build Link)\n'
+            '`validate` — Validates build based on the Deepleague ruleboo (Reply to Build Link)\n'
         ),
         'es': (
             '`ehp` — Calcula los Puntos de Vida Efectivos de un kit Físico y HP completo (Responde a un Enlace de Build)\n'
             '`stats` — Muestra el diagrama de Evolución de Stats para optimización (Responde a un Enlace de Build)\n'
+            '`validate` — Valida la build según el reglamento de Deepleague (Responde a un Enlace de Build)\n'
         )
     },
 }
