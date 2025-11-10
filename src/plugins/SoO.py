@@ -1,8 +1,13 @@
 from collections import defaultdict
 import json
+import os
 
 # Load racial stats using native JSON (replaces pandas - saves ~57MB RAM)
-with open('data/racialstats.json', 'r', encoding='utf-8') as f:
+# Get project root
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.join(current_dir, '..', '..')
+racial_stats_file = os.path.join(project_root, 'data', 'racialstats.json')
+with open(racial_stats_file, 'r', encoding='utf-8') as f:
     racial_stats = json.load(f)
 
 attunements = ["Flamecharm", "Frostdraw", "Thundercall", "Galebreathe", "Shadowcast", "Ironsing", "Bloodrend"]

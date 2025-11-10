@@ -1,11 +1,17 @@
 
 import discord
+import os
 from pathlib import Path
 import re
 
 
 class BuildLegalityChecker:
-    def __init__(self, banned_data_dir='data/banned'):
+    def __init__(self, banned_data_dir=None):
+        if banned_data_dir is None:
+            # Get project root
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.join(current_dir, '..', '..')
+            banned_data_dir = os.path.join(project_root, 'data', 'banned')
         self.banned_data_dir = Path(banned_data_dir)
         # Store as dict with base_name: full_line_with_notes
         self.banned = {

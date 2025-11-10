@@ -1,8 +1,12 @@
 import discord
 import json
+import os
 
 def load_pip_data():
-    pip_file = 'data/pipvalues.json'
+    # Get project root
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.join(current_dir, '..', '..')
+    pip_file = os.path.join(project_root, 'data', 'pipvalues.json')
     with open(pip_file, 'r') as f:
         return json.load(f)
 

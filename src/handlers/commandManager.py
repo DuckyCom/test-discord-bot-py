@@ -9,7 +9,9 @@ class commandManager:
         self.Client = client
 
         self.PREFIX = '.'
-        self.COMMANDPATH = 'src/commands/'
+        # Get absolute path relative to this file's location
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.COMMANDPATH = os.path.join(current_dir, '..', 'commands')
 
     def loadCommands(self):
         commands = {}
@@ -37,27 +39,36 @@ class commandManager:
             return None
         command_name = command_parts[0]
         command_body = command_body[len(command_name):].strip()
+        
+        # Filter meaningless input (only dots, spaces, or very short nonsense)
+        # Examples: "...", "..", ".. .. a", ". . ."
+        cleaned = command_name.replace('.', '').replace(' ', '').strip()
+        if len(cleaned) == 0 or (len(cleaned) == 1 and not cleaned.isalnum()):
+            return None
+        
         print(command_body)
 
         command_file = os.path.join(self.COMMANDPATH, f"{command_name}.py")
         
         # Get guild (server) ID for language support
         guild_id = message.guild.id if message.guild else None
-        
-        # If no args provided for item lookup commands, show usage example instead of returning first item
-        if command_name in ('talent', 'mantra', 'outfit', 'weapon', 'equipment') and len(command_args) == 0:
+
+        # If no args after the command name for item lookup, show usage instead of attempting a lookup
+        if command_name in ('talent', 'mantra', 'outfit', 'weapon', 'equipment', 'kit') and len(command_body.strip()) == 0:
             usage_map = {
                 'talent': '.talent {talent name}',
                 'mantra': '.mantra {mantra name}',
                 'outfit': '.outfit {outfit name}',
                 'weapon': '.weapon {weapon name}',
-                'equipment': '.equipment {equipment name}'
+                'equipment': '.equipment {equipment name}',
+                'kit': '.kit {kit_share_id}'
             }
             example = usage_map.get(command_name, f'.{command_name} {{name}}')
             title = language_manager.get_text(guild_id, 'usage')
             description = language_manager.get_text(guild_id, 'usage_description').format(example=example)
-            embed = discord.Embed(title=title, description=description, color=0xffcc00)
-            return embed
+            embed = discord.Embed(title=f"{title}", description=description, color=0xffcc00)
+            meta = {'auto_delete': True, 'delete_user_message': True, 'timeout': 10}
+            return (embed, meta)
         if os.path.isfile(command_file):
             spec = importlib.util.spec_from_file_location(command_name, command_file)
             command_module = importlib.util.module_from_spec(spec)
@@ -70,7 +81,7 @@ class commandManager:
                     return command_module.execute(message)
                 else:
                     # For lookup commands, pass both command_body and guild_id
-                    if command_name in ('talent', 'mantra', 'outfit', 'weapon', 'equipment'):
+                    if command_name in ('talent', 'mantra', 'outfit', 'weapon', 'equipment', 'kit'):
                         return command_module.execute(command_body, guild_id)
                     else:
                         return command_module.execute(command_body)
@@ -94,5 +105,6 @@ class commandManager:
             else:
                 description = language_manager.get_text(guild_id, 'unknown_command').format(command=command_name)
 
-            embed = discord.Embed(title=title, description=description, color=0xffcc00)
-            return embed
+            embed = discord.Embed(title={title}, description=description, color=0xffcc00)
+            meta = {'auto_delete': True, 'delete_user_message': True, 'timeout': 10}
+            return (embed, meta)

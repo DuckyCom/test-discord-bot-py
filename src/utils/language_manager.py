@@ -1,9 +1,15 @@
 import json
+import os
 from pathlib import Path
 
 
 class LanguageManager:
-    def __init__(self, config_file='data/server_languages.json'):
+    def __init__(self, config_file=None):
+        if config_file is None:
+            # Get project root
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.join(current_dir, '..', '..')
+            config_file = os.path.join(project_root, 'data', 'server_languages.json')
         self.config_file = Path(config_file)
         self.config_file.parent.mkdir(parents=True, exist_ok=True)
         self.languages = self._load_config()
@@ -65,6 +71,14 @@ TRANSLATIONS = {
     'unknown_command': {
         'en': 'Unknown command: {command}',
         'es': 'Comando desconocido: {command}'
+    },
+    'kit_not_found': {
+        'en': 'Kit not found',
+        'es': 'Kit no encontrado'
+    },
+    'kit_not_found_description': {
+        'en': 'Kit with ID `{kit_id}` not found.\n\nMake sure you\'re using the correct kit share ID from the Deepwoken planner.',
+        'es': 'Kit con ID `{kit_id}` no encontrado.\n\nAsegúrate de estar usando el ID correcto del planificador de Deepwoken.'
     },
     
     # Embed fields
@@ -297,6 +311,7 @@ TRANSLATIONS = {
             '`.weapon <name>` — Lookup Weapon details\n'
             '`.outfit <name>` — Lookup Outfit details\n'
             '`.mantra <name>` — Lookup Mantra details\n'
+            '`.kit <share_id>` — Lookup Kit details\n'
         ),
         'es': (
             '`.equipment <nombre>` — Buscar detalles de Equipamiento\n'
@@ -304,6 +319,7 @@ TRANSLATIONS = {
             '`.weapon <nombre>` — Buscar detalles de Arma\n'
             '`.outfit <nombre>` — Buscar detalles de Outfit\n'
             '`.mantra <nombre>` — Buscar detalles de Mantra\n'
+            '`.kit <share_id>` — Buscar detalles de Kit\n'
         )
     },
     'help_analytics_value': {

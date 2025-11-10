@@ -6,7 +6,9 @@ import plugins._DWBAPIWRAPPER as dwb
 class interactionManager:
     def __init__(self, client):
         self.Client = client
-        self.COMMANDPATH = 'src/interactions/'
+        # Get absolute path relative to this file's location
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.COMMANDPATH = os.path.join(current_dir, '..', 'interactions')
 
     def processReply(self, message):
         reply = message.content.strip()
