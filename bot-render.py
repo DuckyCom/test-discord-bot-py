@@ -5,7 +5,6 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from dotenv import load_dotenv
 
-import plugins.dwbapi as dwb
 from plugins import statevograph as emb
 from handlers.commandManager import commandManager
 from plugins.ehpbreakdown import plot_breakdown
@@ -94,7 +93,7 @@ async def on_message(message):
                     # User doesn't have permission
                     guild_id = message.guild.id if message.guild else None
                     lang = language_manager.get_language(guild_id)
-                    title = "🔒 Permission Denied" if lang == 'en' else "🔒 Permiso Denegado"
+                    title = "Permission Denied" if lang == 'en' else "Permiso Denegado"
                     desc = "Only administrators can change the bot language." if lang == 'en' else "Solo los administradores pueden cambiar el idioma del bot."
                     embed = discord.Embed(title=title, description=desc, color=0xED4245)
                     await message.channel.send(embed=embed, reference=message)

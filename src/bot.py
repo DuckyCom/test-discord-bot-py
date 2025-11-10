@@ -5,7 +5,6 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from dotenv import load_dotenv
 
-import plugins.dwbapi as dwb
 from plugins import statevograph as emb
 from handlers.commandManager import commandManager
 from plugins.ehpbreakdown import plot_breakdown
