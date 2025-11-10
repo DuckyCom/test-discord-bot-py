@@ -1,3 +1,1 @@
-"""
-Utilities package for the bot.
-"""
+# utilities for the bot

@@ -1,6 +1,6 @@
 import discord
-from plugins.ehpbreakdown import plot_breakdown
-import plugins.dwbapi as dwb
+from plugins.ehpBreakdown import plot_breakdown
+import plugins._DWBAPIWRAPPER as dwb
 from PIL import Image
 import io
 from utils.language_manager import language_manager

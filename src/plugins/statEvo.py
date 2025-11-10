@@ -1,4 +1,4 @@
-from plugins.shrineoforder import order
+from plugins.SoO import order
 import io
 
 def statevograph(build, guild_id=None):

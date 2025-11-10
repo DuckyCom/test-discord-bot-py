@@ -140,11 +140,11 @@ class BuildLegalityChecker:
         if result['violations']:
             # Violations already include the full text with notes
             embed.add_field(
-                name=f"Violations ({len(result['violations'])})",
+                name=f"Violations ({len(result['violations'])} found)",
                 value='\n'.join(f"{i+1}. {v}" for i, v in enumerate(result['violations'])),
                 inline=False
             )
         
-        embed.set_footer(text="Updated Nov 4, 2024")
+        embed.set_footer(text="Updated Nov 8, 2025")
         
         return embed

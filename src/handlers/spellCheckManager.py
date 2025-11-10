@@ -6,7 +6,7 @@ OPTIMIZATION: Lazy loading - tables are fetched only when needed,
 reducing startup time and memory usage.
 """
 from rapidfuzz import process, fuzz
-from handlers.backbone import fetch_table
+from handlers.dataManager import fetch_table
 
 
 # Global cache for loaded names (lazy initialization)

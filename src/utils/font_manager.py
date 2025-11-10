@@ -1,14 +1,8 @@
-"""
-Font manager for registering custom fonts with matplotlib.
-Loads Helvetica Neue family from assets folder.
-"""
-import os
 import matplotlib.font_manager as fm
 from pathlib import Path
 
 
 def register_helvetica_neue():
-    """Register all Helvetica Neue fonts from assets/helvetica-neue-5 folder."""
     # Get path to fonts directory
     base_dir = Path(__file__).parent.parent.parent  # Go up to repo root
     fonts_dir = base_dir / "assets" / "helvetica-neue-5"
@@ -41,5 +35,5 @@ def register_helvetica_neue():
         return False
 
 
-# Auto-register fonts when module is imported
+# global instance
 _fonts_registered = register_helvetica_neue()

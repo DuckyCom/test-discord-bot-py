@@ -1,4 +1,4 @@
-from plugins.statevograph import statevograph
+from plugins.statEvo import statevograph
 import discord
 from utils.language_manager import language_manager
 

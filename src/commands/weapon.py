@@ -1,12 +1,12 @@
-from handlers.spellCheck import find
-from handlers import spellCheck
-from handlers.backbone import searchTableByName
+from handlers.spellCheckManager import find
+from handlers import spellCheckManager
+from handlers.dataManager import searchTableByName
 import embedBuilder.weaponEmbed as emb
 
 def execute(name, guild_id=None):
     # Ensure names are loaded
-    spellCheck._ensure_names_loaded()
-    name_list = spellCheck.weapon_names
+    spellCheckManager._ensure_names_loaded()
+    name_list = spellCheckManager.weapon_names
     
     substring = name.lower()
     match = next((wname for wname in name_list if substring.lower() in wname.lower()), None)

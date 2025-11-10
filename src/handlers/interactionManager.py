@@ -1,7 +1,7 @@
 import os
 import importlib.util
 import discord
-import plugins.dwbapi as dwb
+import plugins._DWBAPIWRAPPER as dwb
 
 class interactionManager:
     def __init__(self, client):

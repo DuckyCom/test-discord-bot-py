@@ -16,10 +16,6 @@ HEADERS = {
 }
 
 def fetch_table(table_name):
-    """
-    Fetch all records from a Supabase table using direct REST API.
-    Replaces supabase SDK to save ~10MB RAM and ~0.85s startup time.
-    """
     try:
         response = requests.get(
             f'{SUPABASE_URL}/rest/v1/{table_name}?select=*',
@@ -33,14 +29,14 @@ def fetch_table(table_name):
         return []
 
 #fetching functions
-def searchTableByName(table_name, item_name):
+def searchTableByName(table_name, item_name, key_name = "name"):
     table_data = fetch_table(table_name)
 
     if table_name == 'outfits' or table_name == 'equipment':
         table_data = [item['data'] for item in table_data if 'data' in item]
 
     for item in table_data:
-        if item.get("name", 'UNKNOWN').lower() == item_name.lower():
+        if item.get(key_name, 'UNKNOWN').lower() == item_name.lower():
             return item
     return None
 

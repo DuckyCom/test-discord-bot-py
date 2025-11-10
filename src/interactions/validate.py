@@ -1,7 +1,6 @@
-import discord
-from plugins.legality import BuildLegalityChecker
+from plugins.legalityChecker import BuildLegalityChecker
 
-def execute(build, guild_id=None):
+def execute(build, _guild_id=None):
     checker = BuildLegalityChecker()
     result = checker.check_build(build)
     embed = checker.report_embed(result)

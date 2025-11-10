@@ -1,5 +1,5 @@
 import discord
-import handlers.backbone as daten
+import handlers.dataManager as daten
 from utils.language_manager import language_manager
 
 
@@ -23,21 +23,6 @@ def build_weapon_embed(weapon: dict, guild_id=None) -> discord.Embed:
         color=discord.Color.blurple()
     )
     def _format_reqs(reqs_dict: dict) -> str:
-        """Format nested requirements dict into multiple lines.
-
-        Expected input example:
-        {
-            'base': {},
-            'weapon': {'Heavy Wep.': 25, 'Light Wep.': 10},
-            'attunement': {'Flamecharm': 75},
-            'weaponType': None
-        }
-
-        Output (multiline):
-        weapon: 25 Heavy Wep. & 10 Light Wep.
-        attunement: 75 Flamecharm
-        weaponType: None
-        """
         if not isinstance(reqs_dict, dict):
             return ""
 

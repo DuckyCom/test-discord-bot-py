@@ -2,6 +2,8 @@
 
 **Analytic Deepwoken** is a Python-based Discord bot for the Deepwoken Institute of Building (DWIB). It provides comprehensive build analytics, lookups for equipment, talents, weapons, outfits, and mantras, along with smart functions for spellcheck and optimization.
 
+[Invite](https://discord.com/api/oauth2/authorize?client_id=1425293276667449356&permissions=380104722496&scope=bot)
+
 ---
 
 ## Table of Contents
@@ -15,7 +17,6 @@
   - [Analytics](#analytics-commands)
 - [Examples](#examples)
 - [Contributing](#contributing)
-- [License](#license)
 
 ---
 
