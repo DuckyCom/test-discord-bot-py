@@ -2,7 +2,6 @@ import json
 import os
 from pathlib import Path
 
-
 class LanguageManager:
     def __init__(self, config_file=None):
         if config_file is None:
@@ -10,6 +9,7 @@ class LanguageManager:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             project_root = os.path.join(current_dir, '..', '..')
             config_file = os.path.join(project_root, 'data', 'server_languages.json')
+        
         self.config_file = Path(config_file)
         self.config_file.parent.mkdir(parents=True, exist_ok=True)
         self.languages = self._load_config()
@@ -39,7 +39,7 @@ class LanguageManager:
     
     def set_language(self, guild_id, language):
         if language not in ['en', 'es']:
-            raise ValueError("Language must be 'en' or 'es'")   
+            raise ValueError("Language must be 'en' or 'es'")
         self.languages[str(guild_id)] = language
         self._save_config()
         return True
@@ -47,7 +47,6 @@ class LanguageManager:
     def get_text(self, guild_id, key):
         lang = self.get_language(guild_id)
         return TRANSLATIONS.get(key, {}).get(lang, TRANSLATIONS.get(key, {}).get('en', key))
-
 
 # Translation dictionary
 TRANSLATIONS = {
@@ -77,8 +76,8 @@ TRANSLATIONS = {
         'es': 'Kit no encontrado'
     },
     'kit_not_found_description': {
-        'en': 'Kit with ID `{kit_id}` not found.\n\nMake sure you\'re using the correct kit share ID from the Deepwoken planner.',
-        'es': 'Kit con ID `{kit_id}` no encontrado.\n\nAsegúrate de estar usando el ID correcto del planificador de Deepwoken.'
+        'en': 'Kit with ID `{kit_id}` not found.\nMake sure you\'re using the correct kit share ID from the Deepwoken planner.',
+        'es': 'Kit con ID `{kit_id}` no encontrado.\nAsegúrate de estar usando el ID correcto del planificador de Deepwoken.'
     },
     
     # Embed fields
@@ -289,8 +288,8 @@ TRANSLATIONS = {
         'es': 'Menú de Ayuda'
     },
     'help_description': {
-        'en': 'Explore all commands for equipment lookup and analytics!',
-        'es': '¡Explora todos los comandos para búsqueda de equipo y análisis!'
+        'en': 'Explore all commands for equipment lookup, analytics, and channel management!',
+        'es': '¡Explora todos los comandos para búsqueda de equipo, análisis y gestión de canales!'
     },
     'lookup_commands': {
         'en': 'Lookup Commands',
@@ -299,6 +298,14 @@ TRANSLATIONS = {
     'analytics_commands': {
         'en': 'Analytics Commands',
         'es': 'Comandos de Análisis'
+    },
+    'admin_commands': {
+        'en': 'Admin Commands',
+        'es': 'Comandos de Admin'
+    },
+    'clopen_commands': {
+        'en': 'Channel Management',
+        'es': 'Gestión de Canales'
     },
     'help_footer': {
         'en': 'Use .<command> [name] or reply to a Deepwoken build link for analytics!',
@@ -311,31 +318,54 @@ TRANSLATIONS = {
             '`.weapon <name>` — Lookup Weapon details\n'
             '`.outfit <name>` — Lookup Outfit details\n'
             '`.mantra <name>` — Lookup Mantra details\n'
-            '`.kit <share_id>` — Lookup Kit details\n'
+            '`.kit <id>` — Lookup Kit details\n'
         ),
         'es': (
-            '`.equipment <nombre>` — Buscar detalles de Equipamiento\n'
-            '`.talent <nombre>` — Buscar detalles de Talento\n'
-            '`.weapon <nombre>` — Buscar detalles de Arma\n'
-            '`.outfit <nombre>` — Buscar detalles de Outfit\n'
-            '`.mantra <nombre>` — Buscar detalles de Mantra\n'
-            '`.kit <share_id>` — Buscar detalles de Kit\n'
+            '`.equipment <name>` — Buscar detalles de Equipamiento\n'
+            '`.talent <name>` — Buscar detalles de Talento\n'
+            '`.weapon <name>` — Buscar detalles de Arma\n'
+            '`.outfit <name>` — Buscar detalles de Outfit\n'
+            '`.mantra <name>` — Buscar detalles de Mantra\n'
+            '`.kit <id>` — Buscar detalles de Kit\n'
         )
     },
     'help_analytics_value': {
         'en': (
-            '`ehp` — Calculates Effective Health Points of a full Phys and HP kit (Reply to Build Link)\n'
-            '`stats` — Displays the Stat Evolution diagram for optimisation (Reply to Build Link)\n'
-            '`validate` — Validates build based on the Deepleague rulebook (Reply to Build Link)\n'
+            '`ehp` — Calculates Effective Health Points (Reply to Build Link)\n'
+            '`stats` — Displays Stat Evolution diagram for optimisation (Reply to Build Link)\n'
+            '`validate` — Validates build against Deepleague rulebook (Reply to Build Link)\n'
         ),
         'es': (
-            '`ehp` — Calcula los Puntos de Vida Efectivos de un kit Físico y HP completo (Responde a un Enlace de Build)\n'
-            '`stats` — Muestra el diagrama de Evolución de Stats para optimización (Responde a un Enlace de Build)\n'
+            '`ehp` — Calcula los Puntos de Vida Efectivos (Responde a un Enlace de Build)\n'
+            '`stats` — Muestra diagrama de Evolución de Stats para optimización (Responde a un Enlace de Build)\n'
             '`validate` — Valida la build según el reglamento de Deepleague (Responde a un Enlace de Build)\n'
         )
     },
+    'help_admin_value': {
+        'en': (
+            '`.language <en|es>` — Change bot language (Admin only)\n'
+            '`.clopen setup` — Initialize help channel rotation (Admin only)\n'
+            '`.clopen status` — View clopen system status (Admin only)\n'
+        ),
+        'es': (
+            '`.language <en|es>` — Cambiar idioma del bot (Solo Admin)\n'
+            '`.clopen setup` — Inicializar rotación de canales de ayuda (Solo Admin)\n'
+            '`.clopen status` — Ver estado del sistema clopen (Solo Admin)\n'
+        )
+    },
+    'help_clopen_value': {
+        'en': (
+            '`.close [reason]` — Close current help channel\n'
+            'Help channels auto-claim when you send a message\n'
+            'Channels auto-close after 30min of inactivity\n'
+        ),
+        'es': (
+            '`.close [razón]` — Cerrar canal de ayuda actual\n'
+            'Los canales de ayuda se reclaman automáticamente al enviar un mensaje\n'
+            'Los canales se cierran automáticamente después de 30min de inactividad\n'
+        )
+    },
 }
-
 
 # Global instance
 language_manager = LanguageManager()

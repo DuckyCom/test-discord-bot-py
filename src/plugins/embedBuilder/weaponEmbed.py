@@ -1,5 +1,4 @@
 import discord
-import handlers.dataManager as daten
 from utils.language_manager import language_manager
 
 

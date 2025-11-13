@@ -2,8 +2,6 @@ from collections import defaultdict
 import json
 import os
 
-# Load racial stats using native JSON (replaces pandas - saves ~57MB RAM)
-# Get project root
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.join(current_dir, '..', '..')
 racial_stats_file = os.path.join(project_root, 'data', 'racialstats.json')

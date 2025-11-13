@@ -1,6 +1,6 @@
 # Analytic Deepwoken (DWIB Build Analytics)
 
-**Analytic Deepwoken** is a Python-based Discord bot for the Deepwoken Institute of Building (DWIB). It provides comprehensive build analytics, lookups for equipment, talents, weapons, outfits, and mantras, along with smart functions for spellcheck and optimization.
+**Analytic Deepwoken** is a Python-based Discord bot for the Deepwoken Institute of Building (DWIB). It provides comprehensive build analytics, lookups for equipment, talents, weapons, outfits, mantras, and automatic help channel management.
 
 [Invite](https://discord.com/api/oauth2/authorize?client_id=1425293276667449356&permissions=380104722496&scope=bot)
 
@@ -14,7 +14,9 @@
 - [Commands](#commands)
   - [General Commands](#general-commands)
   - [Lookup Commands](#lookup-commands)
-  - [Analytics](#analytics-commands)
+  - [Analytics Commands](#analytics-commands)
+  - [Admin Commands](#admin-commands)
+  - [Channel Management](#channel-management)
 - [Examples](#examples)
 - [Contributing](#contributing)
 
@@ -24,6 +26,8 @@
 
 - Full build analytics (Effective Health Points, Stat Evolution, Summary)
 - Equipment, talent, weapon, outfit, and mantra lookups with fuzzy matching
+- Automatic help channel rotation system (clopen)
+- Multilingual support (English/Spanish)
 - Clean, modular codebase for easy extension
 
 ---
@@ -77,7 +81,7 @@
 
 | Command        | Description                                  |
 | -------------- | -------------------------------------------- |
-| `.help`        |     Displays a help menu                     |
+| `.help`        | Displays the full help menu                  |
 
 ### Lookup Commands
 
@@ -88,16 +92,42 @@
 | `.weapon <name>`      | Lookup Weapon details                        |
 | `.outfit <name>`      | Lookup Outfit details                        |
 | `.mantra <name>`      | Lookup Mantra details                        |
+| `.kit <kit_share_id>`      | Loads a kit based on ID                        |
 
 ### Analytics Commands
 
 | Reply to Build Link         | Description                                          |
 | --------------------------- | ---------------------------------------------------- |
-| `ehp`.                      | Calculates Effective Health Points of a full Phys and HP kit |
-| `stats`.                    | Displays the Stat Evolution diagram for visualisation of optimisation |
-| `validate`.                 | Validates the build against the Deepleague Rulebook |
+| `ehp`                      | Calculates Effective Health Points of a full Phys and HP kit |
+| `stats`                    | Displays the Stat Evolution diagram for visualisation of optimisation |
+| `validate`                 | Validates the build against the Deepleague Rulebook |
 
 Please refer to [Interpretations](#interpretations) for a general guide on how to read the analytics.
+
+### Admin Commands
+
+| Command                     | Description                                  | Permission |
+| --------------------------- | -------------------------------------------- | ---------- |
+| `.language <en\|es>`        | Change bot language for this server         | Admin      |
+| `.clopen setup <avail_cat> <used_cat>` | Initialize help channel rotation | Admin      |
+| `.clopen register <channel_id>` | Add channels to rotation system       | Admin      |
+| `.clopen timeout <seconds>` | Set activity timeout (default: 1800s)       | Admin      |
+| `.clopen userlimit <max>`   | Set max channels per user (default: 2)      | Admin      |
+| `.clopen status`            | View channel system status                   | Admin      |
+
+### Channel Management
+
+| Command                     | Description                                  |
+| --------------------------- | -------------------------------------------- |
+| `.close [reason]`           | Close your current help channel              |
+
+**How it works:**
+
+- Send a message in an available help channel to claim it
+- The bot renames the channel and moves it to "Active Help"
+- After 30 minutes of inactivity, you'll get a prompt to close or keep open
+- Use `.close` anytime to manually close your channel
+- Channels automatically return to the available pool after closing
 
 ---
 
@@ -156,10 +186,32 @@ Constant:
 
 ## Examples
 
-- **Lookup Mantra (proper)**:  `.weapon Champion's Sword`
-- **Lookup Weapon (substring search)**:  `.weapon n's swor`
-- **Lookup Weapon (spellcheck)**: `.weapon gale hb`
-- **Analyze Build EHP**: `(replying to build link) ehp`
+**Lookup Commands:**
+
+- `.weapon Champion's Sword` — Exact match
+- `.weapon n's swor` — Substring search
+- `.weapon gale hb` — Spellcheck correction
+
+**Analytics (reply to build link):**
+
+- `ehp` — Get EHP breakdown
+- `stats` — View stat evolution
+- `validate` — Check Deepleague compliance
+
+**Channel Management:**
+
+- Send message in available channel → Auto-claims channel
+- `.close` → Close your help channel
+- `.close Thanks for the help!` → Close with reason
+
+**Admin Setup:**
+
+```md
+.clopen setup 123456789 987654321
+.clopen register 111111111 222222222
+.clopen timeout 1800
+.clopen status
+```
 
 ---
 

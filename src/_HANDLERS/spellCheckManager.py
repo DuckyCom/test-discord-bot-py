@@ -1,12 +1,5 @@
-"""
-Fuzzy string matching for spell-checking using RapidFuzz.
-Replaces the previous PyTorch/sentence-transformers implementation.
-
-OPTIMIZATION: Lazy loading - tables are fetched only when needed,
-reducing startup time and memory usage.
-"""
 from rapidfuzz import process, fuzz
-from handlers.dataManager import fetch_table
+from _HANDLERS.dataManager import fetch_table
 
 
 # Global cache for loaded names (lazy initialization)
@@ -123,16 +116,6 @@ for t, amap in ALIASES.items():
 
 
 def find(argument, type):
-    """
-    Find the most similar name for `argument` among the given `type` using fuzzy matching.
-    
-    Args:
-        argument (str): The query string to match.
-        type (str): The type of item ('talent', 'mantra', 'outfit', 'equipment', 'weapon').
-    
-    Returns:
-        str: The best matching name from the database.
-    """
     argument = (argument or "").strip()
     
     # Get names for this type (uses cache if already loaded)

@@ -1,3 +1,8 @@
+"""
+FIXED bot.py - Handle None returns from async commands
+Replace: bot.py
+"""
+
 import discord
 import os
 import asyncio
@@ -5,162 +10,157 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from dotenv import load_dotenv
 
-from handlers.commandManager import commandManager
-from handlers.interactionManager import interactionManager
+from _HANDLERS.commandManager import commandManager
+from _HANDLERS.interactionManager import interactionManager
+from _HANDLERS.clopenManager import channelManager
 from utils.language_manager import language_manager
 
-intents = discord.Intents.default()
-intents.message_content = True
-
-#setup
 load_dotenv()
 
-# Start a tiny HTTP server for Render/Uptime probes in a background thread
-def _start_webserver_in_thread():
-    """Start a small HTTP server that responds 200 OK on / and /health.
-
-    Uses PORT env var (defaults to 8080). Runs in a daemon thread so it won't block shutdown.
-    """
+# Health check server
+def start_health_server():
     port = int(os.getenv("PORT", "8080"))
-
-    class _HealthHandler(BaseHTTPRequestHandler):
+    
+    class HealthHandler(BaseHTTPRequestHandler):
         def do_GET(self):
+            self.send_response(200 if self.path in ("/", "/health") else 404)
             if self.path in ("/", "/health"):
-                self.send_response(200)
                 self.send_header("Content-Type", "text/plain")
                 self.end_headers()
                 self.wfile.write(b"OK")
             else:
-                self.send_response(404)
                 self.end_headers()
+        
+        do_HEAD = do_GET
+        log_message = lambda self, *args: None
+    
+    server = HTTPServer(("0.0.0.0", port), HealthHandler)
+    print(f"Health server running on port {port}")
+    server.serve_forever()
 
-        def do_HEAD(self):
-            if self.path in ("/", "/health"):
-                self.send_response(200)
-                self.send_header("Content-Type", "text/plain")
-                self.end_headers()
-            else:
-                self.send_response(404)
-                self.end_headers()
+threading.Thread(target=start_health_server, daemon=True).start()
 
-        # Silence default logging
-        def log_message(self, format, *args):
-            return
+# Bot setup
+intents = discord.Intents.default()
+intents.message_content = True
+intents.guilds = True
+intents.reactions = True
 
-    server = HTTPServer(("0.0.0.0", port), _HealthHandler)
-    print(f"Starting HTTP server on 0.0.0.0:{port} (health endpoint)")
-    try:
-        server.serve_forever()
-    except Exception as exc:
-        print("Webserver stopped:", exc)
-
-# Launch health server thread
-threading.Thread(target=_start_webserver_in_thread, daemon=True).start()
-BOT_TOKEN = str(os.getenv("BOT_TOKEN"))
 client = discord.Client(intents=intents)
-commands = commandManager(client)
-interactions = interactionManager(client)
-commands.loadCommands()
+
+# Initialize managers
+cmd_manager = commandManager(client)
+interaction_manager = interactionManager(client)
+clopen_manager = channelManager(client)
+
+# Link managers together
+client.clopen_manager = clopen_manager
+cmd_manager.clopen_manager = clopen_manager
+
+cmd_manager.loadCommands()
 
 @client.event
 async def on_ready():
-    print(f'Im fucking poa at {client.user}')
+    print(f'Bot ready as {client.user}')
+    
+    # Load clopen configuration
+    await clopen_manager.load_config()
+    print(f"Clopen system loaded: {len(clopen_manager.guild_configs)} guilds, {len(clopen_manager.channels)} channels")
+    
+    # Start clopen scheduler
+    clopen_manager.scheduler_task = asyncio.create_task(
+        clopen_manager.start_scheduler()
+    )
 
 @client.event
 async def on_message(message):
-    if message.author == client.user:
+    if message.author.bot:
         return
     
-    if message.content.startswith(commands.PREFIX):
-        # Special handling for language command (requires admin permissions)
-        if message.content.startswith('.language ') or message.content == '.language':
-            # Check if in a guild and user has admin permissions
-            if message.guild:
-                if message.author.guild_permissions.administrator:
-                    # Extract language code from command
-                    lang_code = message.content[10:].strip().lower()  # Remove '.language '
-                    if lang_code in ['en', 'es']:
-                        language_manager.set_language(message.guild.id, lang_code)
-                    # Process command normally to show response (in a thread to avoid blocking)
-                    result = await asyncio.to_thread(commands.processCommand, message)
-                    if result:
-                        if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], dict):
-                            embed, meta = result
-                        else:
-                            embed, meta = result, None
-                        sent_message = await message.channel.send(embed=embed, reference=message)
-                        if meta and meta.get('auto_delete'):
-                            await asyncio.sleep(int(meta.get('timeout', 10)))
-                            try:
-                                await sent_message.delete()
-                                if meta.get('delete_user_message'):
-                                    await message.delete()
-                            except (discord.errors.NotFound, discord.errors.Forbidden):
-                                pass
-                else:
-                    # User doesn't have permission
-                    guild_id = message.guild.id if message.guild else None
-                    lang = language_manager.get_language(guild_id)
-                    title = "Permission Denied" if lang == 'en' else "Permiso Denegado"
-                    desc = "Only administrators can change the bot language." if lang == 'en' else "Solo los administradores pueden cambiar el idioma del bot."
-                    embed = discord.Embed(title=f"{title}", description=desc, color=0xED4245)
-                    sent_message = await message.channel.send(embed=embed, reference=message)
-                    # Auto-delete permission error after 10 seconds
-                    await asyncio.sleep(10)
-                    try:
-                        await sent_message.delete()
-                        await message.delete()
-                    except (discord.errors.NotFound, discord.errors.Forbidden):
-                        pass
-            else:
-                # DM - just show the info (in a thread to avoid blocking)
-                result = await asyncio.to_thread(commands.processCommand, message)
-                if result:
-                    if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], dict):
-                        embed, meta = result
-                    else:
-                        embed, meta = result, None
-                    sent_message = await message.channel.send(embed=embed, reference=message)
-                    if meta and meta.get('auto_delete'):
-                        await asyncio.sleep(int(meta.get('timeout', 10)))
-                        try:
-                            await sent_message.delete()
-                            if meta.get('delete_user_message'):
-                                await message.delete()
-                        except (discord.errors.NotFound, discord.errors.Forbidden):
-                            pass
-        else:
-            # Normal command processing (in a thread to avoid blocking)
-            result = await asyncio.to_thread(commands.processCommand, message)
-            if result:
-                # Allow returning either an Embed or (Embed, meta) where meta controls auto-delete
-                if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], dict):
-                    embed, meta = result
-                else:
-                    embed, meta = result, None
-
-                sent_message = await message.channel.send(embed=embed, reference=message)
-                # Auto-delete error/usage messages after timeout if meta requests it
-                if meta and meta.get('auto_delete'):
-                    await asyncio.sleep(int(meta.get('timeout', 10)))
-                    try:
-                        await sent_message.delete()
-                        if meta.get('delete_user_message'):
-                            await message.delete()  # Also delete the user's command
-                    except (discord.errors.NotFound, discord.errors.Forbidden):
-                        pass
+    # Handle clopen system (must be first)
+    await clopen_manager.on_message(message)
     
-    if message.type == discord.MessageType.reply:
-        referenced = message.reference
-        if referenced and referenced.resolved:
-            replied_msg = referenced.resolved
-            if 'https://deepwoken.co/builder?id=' in replied_msg.content:
-                # Process interaction in a thread to avoid blocking
-                result = await asyncio.to_thread(interactions.processReply, message)
-                if result is not None:
-                    embed, file = result
-                    if embed is not None or file is not None:
-                        await message.channel.send(embed=embed, file=file, reference=message)
+    # Handle prefix commands
+    if message.content.startswith(cmd_manager.PREFIX):
+        await handle_command(message)
+    
+    # Handle Deepwoken builder replies
+    if message.type == discord.MessageType.reply and message.reference:
+        replied_msg = message.reference.resolved
+        if replied_msg and 'https://deepwoken.co/builder?id=' in replied_msg.content:
+            result = await asyncio.to_thread(interaction_manager.processReply, message)
+            if result:
+                embed, file = result
+                if embed or file:
+                    await message.channel.send(embed=embed, file=file, reference=message)
 
+@client.event
+async def on_reaction_add(reaction, user):
+    await clopen_manager.on_reaction_add(reaction, user)
 
-client.run(BOT_TOKEN)
+async def handle_command(message):
+    # Language command special handling
+    if message.content.startswith('.language'):
+        if not await handle_language_command(message):
+            return
+    
+    # Process command (now async)
+    result = await cmd_manager.processCommand(message)
+    
+    # If result is None, it means async command already sent its own message
+    if not result:
+        return
+    
+    # Parse result - handle both (embed, meta) and plain embed
+    if isinstance(result, tuple) and len(result) == 2:
+        embed, meta = result
+    else:
+        embed, meta = result, None
+    
+    # Send response
+    if embed:
+        sent = await message.channel.send(embed=embed, reference=message)
+        
+        # Auto-delete if requested
+        if meta and meta.get('auto_delete'):
+            await asyncio.sleep(meta.get('timeout', 10))
+            try:
+                await sent.delete()
+                if meta.get('delete_user_message'):
+                    await message.delete()
+            except discord.errors.NotFound:
+                pass
+
+async def handle_language_command(message):
+    guild_id = message.guild.id if message.guild else None
+    lang = language_manager.get_language(guild_id)
+    
+    # Check permissions in guilds
+    if message.guild:
+        if not message.author.guild_permissions.administrator:
+            embed = discord.Embed(
+                title="Permission Denied" if lang == 'en' else "Permiso Denegado",
+                description=(
+                    "Only administrators can change the bot language." 
+                    if lang == 'en' else 
+                    "Solo los administradores pueden cambiar el idioma del bot."
+                ),
+                color=0xED4245
+            )
+            sent = await message.channel.send(embed=embed, reference=message)
+            await asyncio.sleep(10)
+            try:
+                await sent.delete()
+                await message.delete()
+            except discord.errors.NotFound:
+                pass
+            return False
+        
+        # Set language if valid
+        lang_code = message.content[10:].strip().lower()
+        if lang_code in ['en', 'es']:
+            language_manager.set_language(guild_id, lang_code)
+    
+    return True
+
+client.run(os.getenv("BOT_TOKEN"))

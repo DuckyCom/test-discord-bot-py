@@ -8,8 +8,6 @@ def statevograph(build, guild_id=None):
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
     from utils.language_manager import language_manager
-    
-    # Register custom fonts (optional). If unavailable, we'll use a safe default font.
     try:
         from utils.font_manager import _fonts_registered  # side-effect: registers fonts if present
     except Exception:

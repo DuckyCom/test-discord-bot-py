@@ -1,5 +1,5 @@
 import requests
-import handlers as process
+import _HANDLERS as process
 
 talentBase = process.fetch_table('talents')
 
@@ -72,6 +72,8 @@ class dwbBuild:
     def resisCoefficient(cls ,pen ,res ,penres) -> float:
         return (1- ((res/100) * (1 - (pen * (1 - penres/100) / 100))))
     
+    # this has a very high chance of being wrong as fuck
+
     @classmethod
     def scalePhys(cls, kit, talents = {}, outfitName = None):
         outfit = process.searchTableByName("outfits", outfitName)

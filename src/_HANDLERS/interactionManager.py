@@ -1,6 +1,5 @@
 import os
 import importlib.util
-import discord
 import plugins._DWBAPIWRAPPER as dwb
 
 class interactionManager:
