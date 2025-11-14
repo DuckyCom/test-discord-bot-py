@@ -1,5 +1,5 @@
 import discord
-from plugins.ehpBreakdown import plot_breakdown
+from plugins.ehpbreakdown import plot_breakdown
 import plugins._DWBAPIWRAPPER as dwb
 from PIL import Image
 import io
