@@ -19,23 +19,50 @@ load_dotenv()
 
 # Health check server
 def start_health_server():
-    port = int(os.getenv("PORT", "8080"))
+    port = int(os.getenv("PORT", "10000"))
+    external_base = os.getenv("RENDER_EXTERNAL_URL") or os.getenv("EXTERNAL_URL")
     
     class HealthHandler(BaseHTTPRequestHandler):
+        def _log_uptime_ping(self):
+            proto = self.headers.get("X-Forwarded-Proto", "").lower()
+            scheme = "https" if proto == "https" else "http"
+            host = self.headers.get("Host", f"0.0.0.0:{self.server.server_port}")
+            full_url = f"{scheme}://{host}{self.path}"
+            ua = self.headers.get("User-Agent", "-")
+            src = f"{self.client_address[0]}" if self.client_address else "-"
+
+            if self.path == "/":
+                print(f"[UptimeRobot] Ping to ROOT: {full_url} from {src} UA='{ua}'")
+            elif self.path == "/health":
+                print(f"[UptimeRobot] Ping to HEALTH: {full_url} from {src} UA='{ua}'")
+
         def do_GET(self):
             self.send_response(200 if self.path in ("/", "/health") else 404)
             if self.path in ("/", "/health"):
                 self.send_header("Content-Type", "text/plain")
                 self.end_headers()
                 self.wfile.write(b"OK")
+                self._log_uptime_ping()
             else:
                 self.end_headers()
         
-        do_HEAD = do_GET
+        def do_HEAD(self):
+            self.send_response(200 if self.path in ("/", "/health") else 404)
+            if self.path in ("/", "/health"):
+                self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            if self.path in ("/", "/health"):
+                self._log_uptime_ping()
+        
         log_message = lambda self, *args: None
     
     server = HTTPServer(("0.0.0.0", port), HealthHandler)
-    print(f"Health server running on port {port}")
+    if external_base:
+        print(
+            f"Health server running on port {port} (paths: /, /health) | External endpoints: {external_base}/ , {external_base}/health"
+        )
+    else:
+        print(f"Health server running on port {port} (paths: /, /health)")
     server.serve_forever()
 
 threading.Thread(target=start_health_server, daemon=True).start()
@@ -57,7 +84,11 @@ clopen_manager = channelManager(client)
 client.clopen_manager = clopen_manager
 cmd_manager.clopen_manager = clopen_manager
 
-cmd_manager.loadCommands()
+# Try to pre-load commands at startup, but don't crash the bot if it fails
+try:
+    cmd_manager.loadCommands()
+except Exception as e:
+    print(f"Warning: failed to load commands at startup: {e}")
 
 @client.event
 async def on_ready():
