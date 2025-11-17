@@ -99,10 +99,13 @@ cmd_manager.clopen_manager = clopen_manager
 
 
 async def _send_text_response(interaction: discord.Interaction, content: str, *, ephemeral: bool = True):
-    if interaction.response.is_done():
-        await interaction.followup.send(content, ephemeral=ephemeral)
-    else:
-        await interaction.response.send_message(content, ephemeral=ephemeral)
+    # Always prefer followups; ensure we've acknowledged the interaction
+    if not interaction.response.is_done():
+        try:
+            await interaction.response.defer(thinking=False, ephemeral=ephemeral)
+        except Exception:
+            pass
+    await interaction.followup.send(content, ephemeral=ephemeral)
 
 
 async def _dispatch_command_result(
@@ -123,10 +126,13 @@ async def _dispatch_command_result(
         await _send_text_response(interaction, fallback, ephemeral=True)
         return
 
-    if interaction.response.is_done():
-        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
-    else:
-        await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
+    # Ensure interaction is acknowledged, then send followup (robust against delays)
+    if not interaction.response.is_done():
+        try:
+            await interaction.response.defer(thinking=False, ephemeral=ephemeral)
+        except Exception:
+            pass
+    await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
 async def _run_lookup_command(
@@ -140,6 +146,13 @@ async def _run_lookup_command(
     if not cleaned_query:
         await _send_text_response(interaction, "Please provide a name to search.", ephemeral=True)
         return
+
+    # Defer immediately to avoid 3s timeouts while we do blocking lookups
+    if not interaction.response.is_done():
+        try:
+            await interaction.response.defer(thinking=True, ephemeral=True)
+        except Exception:
+            pass
 
     try:
         result = module.execute(cleaned_query, None)
@@ -157,6 +170,11 @@ async def _run_lookup_command(
 
 @tree.command(name="help", description="Show the Analytic Deepwoken help menu.")
 async def help_slash_command(interaction: discord.Interaction):
+    if not interaction.response.is_done():
+        try:
+            await interaction.response.defer(thinking=False, ephemeral=True)
+        except Exception:
+            pass
     embed = help_command.execute("slash", None)
     await _dispatch_command_result(interaction, embed, fallback="Unable to display the help menu.")
 
@@ -224,6 +242,12 @@ async def kit_slash_command(interaction: discord.Interaction, kit_id: str):
         await _send_text_response(interaction, "Please provide a kit share ID.", ephemeral=True)
         return
 
+    if not interaction.response.is_done():
+        try:
+            await interaction.response.defer(thinking=True, ephemeral=True)
+        except Exception:
+            pass
+
     try:
         result = kit_command.execute(cleaned, None)
     except Exception as exc:
@@ -255,6 +279,12 @@ async def language_slash_command(
     interaction: discord.Interaction,
     language_code: Optional[app_commands.Choice[str]] = None,
 ):
+    # Language management can be quick, but defer to be safe and to unify UX
+    if not interaction.response.is_done():
+        try:
+            await interaction.response.defer(thinking=False, ephemeral=True)
+        except Exception:
+            pass
     if interaction.guild is None:
         await _send_text_response(
             interaction,
