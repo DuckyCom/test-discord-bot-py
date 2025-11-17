@@ -5,7 +5,7 @@ import discord
 from discord import app_commands
 from typing import Optional
 
-from .shared import send_text_response, dispatch_command_result
+from .shared import send_text_response, dispatch_command_result, run_lookup_command
 import commands.help as help_command
 import commands.equipment as equipment_command
 import commands.weapon as weapon_command
@@ -18,45 +18,67 @@ import commands.language as language_command
 
 async def execute_help(interaction: discord.Interaction):
     """Execute the /help command."""
-    # Import here to avoid circular dependency
-    from bot import _run_lookup_command
-    await _run_lookup_command(interaction, help_command, item_name=None)
+    await run_lookup_command(interaction, help_command, item_name=None)
 
 
 async def execute_equipment(interaction: discord.Interaction, equipment_name: str):
     """Execute the /equipment command."""
-    from bot import _run_lookup_command
-    await _run_lookup_command(interaction, equipment_command, item_name=equipment_name)
+    await run_lookup_command(
+        interaction, 
+        equipment_command, 
+        item_name=equipment_name,
+        fallback="Equipment not found. Try another name."
+    )
 
 
 async def execute_weapon(interaction: discord.Interaction, weapon_name: str):
     """Execute the /weapon command."""
-    from bot import _run_lookup_command
-    await _run_lookup_command(interaction, weapon_command, item_name=weapon_name)
+    await run_lookup_command(
+        interaction, 
+        weapon_command, 
+        item_name=weapon_name,
+        fallback="Weapon not found. Try another name."
+    )
 
 
 async def execute_talent(interaction: discord.Interaction, talent_name: str):
     """Execute the /talent command."""
-    from bot import _run_lookup_command
-    await _run_lookup_command(interaction, talent_command, item_name=talent_name)
+    await run_lookup_command(
+        interaction, 
+        talent_command, 
+        item_name=talent_name,
+        fallback="Talent not found. Try another name."
+    )
 
 
 async def execute_mantra(interaction: discord.Interaction, mantra_name: str):
     """Execute the /mantra command."""
-    from bot import _run_lookup_command
-    await _run_lookup_command(interaction, mantra_command, item_name=mantra_name)
+    await run_lookup_command(
+        interaction, 
+        mantra_command, 
+        item_name=mantra_name,
+        fallback="Mantra not found. Try another name."
+    )
 
 
 async def execute_outfit(interaction: discord.Interaction, outfit_name: str):
     """Execute the /outfit command."""
-    from bot import _run_lookup_command
-    await _run_lookup_command(interaction, outfit_command, item_name=outfit_name)
+    await run_lookup_command(
+        interaction, 
+        outfit_command, 
+        item_name=outfit_name,
+        fallback="Outfit not found. Try another name."
+    )
 
 
 async def execute_kit(interaction: discord.Interaction, kit_name: str):
     """Execute the /kit command."""
-    from bot import _run_lookup_command
-    await _run_lookup_command(interaction, kit_command, item_name=kit_name)
+    await run_lookup_command(
+        interaction, 
+        kit_command, 
+        item_name=kit_name,
+        fallback="Kit not found. Please verify the share ID."
+    )
 
 
 async def execute_language(interaction: discord.Interaction, language_code: Optional[app_commands.Choice[str]] = None):

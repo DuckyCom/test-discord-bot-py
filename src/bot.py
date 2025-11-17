@@ -142,60 +142,6 @@ async def _dispatch_command_result(
     await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
 
-async def _run_lookup_command(
-    interaction: discord.Interaction,
-    module,
-    item_name: Optional[str],
-):
-    """Run a lookup command (equipment, weapon, talent, mantra, outfit, kit, language)."""
-    # Special handling for help (no item_name needed)
-    if item_name is None and module == help_command:
-        if not interaction.response.is_done():
-            try:
-                await interaction.response.defer(thinking=False, ephemeral=True)
-            except Exception:
-                pass
-        embed = help_command.execute("slash", None)
-        await _dispatch_command_result(interaction, embed, fallback="Unable to display the help menu.")
-        return
-    
-    # For all other lookups, validate item_name
-    cleaned_query = (item_name or "").strip()
-    if not cleaned_query:
-        await _send_text_response(interaction, "Please provide a name to search.", ephemeral=True)
-        return
-
-    # Defer immediately to avoid 3s timeouts while we do blocking lookups
-    if not interaction.response.is_done():
-        try:
-            await interaction.response.defer(thinking=True, ephemeral=True)
-        except Exception:
-            pass
-
-    try:
-        result = module.execute(cleaned_query, None)
-    except Exception as exc:
-        error_embed = discord.Embed(
-            title="Lookup failed",
-            description=f"An unexpected error occurred: {exc}",
-            color=0xED4245,
-        )
-        await _dispatch_command_result(interaction, error_embed, ephemeral_override=True)
-        return
-
-    fallback_messages = {
-        equipment_command: "Equipment not found. Try another name.",
-        weapon_command: "Weapon not found. Try another name.",
-        talent_command: "Talent not found. Try another name.",
-        mantra_command: "Mantra not found. Try another name.",
-        outfit_command: "Outfit not found. Try another name.",
-        kit_command: "Kit not found. Please verify the share ID.",
-    }
-    fallback = fallback_messages.get(module, "Item not found.")
-    
-    await _dispatch_command_result(interaction, result, fallback=fallback)
-
-
 @tree.command(name="help", description="Show the Analytic Deepwoken help menu.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def help_slash_command(interaction: discord.Interaction):
