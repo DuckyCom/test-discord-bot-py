@@ -169,6 +169,7 @@ async def _run_lookup_command(
 
 
 @tree.command(name="help", description="Show the Analytic Deepwoken help menu.")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def help_slash_command(interaction: discord.Interaction):
     if not interaction.response.is_done():
         try:
@@ -180,6 +181,7 @@ async def help_slash_command(interaction: discord.Interaction):
 
 
 @tree.command(name="equipment", description="Look up equipment details by name.")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(name="Full or partial equipment name")
 async def equipment_slash_command(interaction: discord.Interaction, name: str):
     await _run_lookup_command(
@@ -191,6 +193,7 @@ async def equipment_slash_command(interaction: discord.Interaction, name: str):
 
 
 @tree.command(name="weapon", description="Look up weapon details by name.")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(name="Full or partial weapon name")
 async def weapon_slash_command(interaction: discord.Interaction, name: str):
     await _run_lookup_command(
@@ -202,6 +205,7 @@ async def weapon_slash_command(interaction: discord.Interaction, name: str):
 
 
 @tree.command(name="talent", description="Look up talent details by name.")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(name="Full or partial talent name")
 async def talent_slash_command(interaction: discord.Interaction, name: str):
     await _run_lookup_command(
@@ -213,6 +217,7 @@ async def talent_slash_command(interaction: discord.Interaction, name: str):
 
 
 @tree.command(name="mantra", description="Look up mantra details by name.")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(name="Full or partial mantra name")
 async def mantra_slash_command(interaction: discord.Interaction, name: str):
     await _run_lookup_command(
@@ -224,6 +229,7 @@ async def mantra_slash_command(interaction: discord.Interaction, name: str):
 
 
 @tree.command(name="outfit", description="Look up outfit details by name.")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(name="Full or partial outfit name")
 async def outfit_slash_command(interaction: discord.Interaction, name: str):
     await _run_lookup_command(
@@ -235,6 +241,7 @@ async def outfit_slash_command(interaction: discord.Interaction, name: str):
 
 
 @tree.command(name="kit", description="Look up kit details by share ID.")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(kit_id="Kit share ID from the Deepwoken planner")
 async def kit_slash_command(interaction: discord.Interaction, kit_id: str):
     cleaned = (kit_id or "").strip()
@@ -273,6 +280,7 @@ language_choices = [
 
 
 @tree.command(name="language", description="Configure the bot language for this server.")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(language_code="Language to apply (English or Spanish)")
 @app_commands.choices(language_code=language_choices)
 async def language_slash_command(
