@@ -46,7 +46,7 @@ def execute(build, guild_id=None, kit_id=None):
         output_buf.seek(0)
 
         file = discord.File(fp=output_buf, filename="kit_breakdown.png")
-        title = language_manager.get_text(guild_id, 'ehp_breakdown_title').format(name=build.name)
+        title = language_manager.get_text(guild_id, 'ehp_breakdown_title_single').format(name=build.name)
         subtitle = f" (Kit: +{kit_hp} HP, +{kit_phys}% Phys Armor)" if (kit_hp or kit_phys) else ""
         embed = discord.Embed(
             title=title + subtitle,

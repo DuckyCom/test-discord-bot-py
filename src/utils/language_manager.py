@@ -275,6 +275,10 @@ TRANSLATIONS = {
         'en': 'Physical EHP Breakdown — {name}\nTop image: Phys Kit\nBottom image: HP Kit',
         'es': 'Desglose de EHP Físico — {name}\nImagen superior: Kit Físico\nImagen inferior: Kit HP'
     },
+    'ehp_breakdown_title_single': {
+        'en': 'Physical EHP Breakdown — {name}',
+        'es': 'Desglose de EHP Físico — {name}'
+    },
     
     # Stats Interaction
     'stat_evolution_title': {

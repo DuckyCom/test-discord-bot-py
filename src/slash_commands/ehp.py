@@ -11,6 +11,8 @@ from .shared import dispatch_command_result
 import plugins._DWBAPIWRAPPER as dwb
 from _HANDLERS.dataManager import searchTableByName
 from plugins.ehpbreakdown import plot_breakdown
+from plugins.kitTools import calculate_kit_stats
+from utils.language_manager import language_manager
 
 
 async def execute(interaction: discord.Interaction, kit_id: Optional[str] = None, build_link: Optional[str] = None):
@@ -41,21 +43,74 @@ async def execute(interaction: discord.Interaction, kit_id: Optional[str] = None
         await dispatch_command_result(interaction, error_embed, ephemeral_override=True)
         return
 
-    # Handle optional kit
-    extra_hp = 0
-    if kit_id:
-        kit_id_clean = kit_id.strip()
-        kit_data = searchTableByName('kits', kit_id_clean, 'kit_share_id')
-        if kit_data:
-            # Sum HP from kit items
-            for item in kit_data.get('data', {}).get('items', []):
-                extra_hp += item.get('hp', 0)
-
     try:
-        # Adjust kithp params for both phys and hp builds
-        params_phys = {'dps': 100, 'pen': 50, 'kithp': 112 + extra_hp, 'kitresis': 33}
-        params_hp = {'dps': 100, 'pen': 50, 'kithp': 154 + extra_hp, 'kitresis': 4}
-        
+        guild_id = interaction.guild.id if interaction.guild else None
+
+        # If a kit is provided, compute totals (HP and Physical armor) and render a single chart
+        if kit_id:
+            kit_id_clean = kit_id.strip()
+            kit_data = searchTableByName('kits', kit_id_clean, 'kit_share_id')
+            if not kit_data:
+                title = language_manager.get_text(guild_id, 'kit_not_found')
+                description = language_manager.get_text(guild_id, 'kit_not_found_description').format(kit_id=kit_id_clean)
+                error_embed = discord.Embed(title=title, description=description, color=0xED4245)
+                await dispatch_command_result(interaction, error_embed, ephemeral_override=True)
+                return
+
+            # Aggregate kit totals with calculate_kit_stats, supporting possible shapes
+            items = None
+            # Common shapes observed in repo
+            for key_path in (
+                ('kit_data',),
+                ('data', 'items'),
+                ('items',),
+            ):
+                node = kit_data
+                try:
+                    for k in key_path:
+                        node = node.get(k, None)
+                    if isinstance(node, list):
+                        items = node
+                        break
+                except Exception:
+                    continue
+
+            total_health = 0
+            total_phys = 0
+            if items:
+                for item in items:
+                    stats = calculate_kit_stats(item)
+                    total_health += stats.get('Health', 0)
+                    total_phys += stats.get('Physical armor', 0)
+
+            buf = plot_breakdown(build, talentBase=dwb.talentBase, params={
+                'dps': 100, 'pen': 50, 'kithp': total_health, 'kitresis': total_phys
+            })
+
+            img = Image.open(buf)
+            output_buf = io.BytesIO()
+            img.save(output_buf, format="PNG")
+            output_buf.seek(0)
+
+            file = discord.File(fp=output_buf, filename="kit_breakdown.png")
+
+            title = language_manager.get_text(guild_id, 'ehp_breakdown_title_single').format(name=build.name)
+            subtitle = f" (Kit: +{total_health} HP, +{total_phys}% Phys Armor)" if (total_health or total_phys) else ""
+            embed = discord.Embed(
+                title=title + subtitle,
+                color=discord.Color.blurple()
+            )
+            embed.set_image(url="attachment://kit_breakdown.png")
+
+            if not interaction.response.is_done():
+                await interaction.response.defer(thinking=False, ephemeral=False)
+            await interaction.followup.send(embed=embed, file=file, ephemeral=False)
+            return
+
+        # Default: two combined charts (Phys kit defaults and HP kit defaults)
+        params_phys = {'dps': 100, 'pen': 50, 'kithp': 112, 'kitresis': 33}
+        params_hp = {'dps': 100, 'pen': 50, 'kithp': 154, 'kitresis': 4}
+
         buf1 = plot_breakdown(build, talentBase=dwb.talentBase, params=params_phys)
         buf2 = plot_breakdown(build, talentBase=dwb.talentBase, params=params_hp)
 
@@ -74,13 +129,9 @@ async def execute(interaction: discord.Interaction, kit_id: Optional[str] = None
 
         file = discord.File(fp=output_buf, filename="kit_breakdown.png")
 
-        title = f"Physical EHP Breakdown — {build.name}"
-        if kit_id and extra_hp > 0:
-            title += f" (+{extra_hp} HP from kit {kit_id_clean})"
-        
+        title = language_manager.get_text(guild_id, 'ehp_breakdown_title').format(name=build.name)
         embed = discord.Embed(
             title=title,
-            description="Top image: Phys Kit\nBottom image: HP Kit",
             color=discord.Color.blurple()
         )
         embed.set_image(url="attachment://kit_breakdown.png")
