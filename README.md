@@ -93,6 +93,15 @@ All lookup and utility commands (except channel management) are now available as
 | `/outfit <name>` | Look up outfit data by name. |
 | `/kit <kit_id>` | Fetch kit details by share ID. |
 | `/language <en\|es>` | (Server admins) set the bot language for the current server. |
+| `/ehp <build_link> [kit_id]` | Calculate Effective Health Points for a build. Optional kit_id adds equipment HP to the calculation. |
+| `/stats <build_link>` | Display stat evolution diagram for build optimization. |
+| `/validate <build_link>` | Validate a build against the Deepleague rulebook. |
+
+**Note on build analysis commands (`/ehp`, `/stats`, `/validate`):**
+- The `build_link` parameter is **optional**
+- If you don't provide a link, the bot will search for a recent Deepwoken builder link in the last 10 messages of the channel
+- This allows you to use the command right after someone posts a build link
+- If no link is found in recent messages and you didn't provide one, you'll get an error asking you to provide it
 
 > `clopen` and `close` remain prefix-only because they depend on guild-specific channel management.
 

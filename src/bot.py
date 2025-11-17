@@ -26,6 +26,13 @@ from commands import outfit as outfit_command
 from commands import talent as talent_command
 from commands import weapon as weapon_command
 
+from interactions import ehp as ehp_interaction
+from interactions import stats as stats_interaction
+from interactions import validate as validate_interaction
+
+import plugins._DWBAPIWRAPPER as dwb
+from _HANDLERS.dataManager import searchTableByName
+
 load_dotenv()
 
 # Health check server
@@ -138,11 +145,22 @@ async def _dispatch_command_result(
 async def _run_lookup_command(
     interaction: discord.Interaction,
     module,
-    query: str,
-    *,
-    fallback: str,
+    item_name: Optional[str],
 ):
-    cleaned_query = (query or "").strip()
+    """Run a lookup command (equipment, weapon, talent, mantra, outfit, kit, language)."""
+    # Special handling for help (no item_name needed)
+    if item_name is None and module == help_command:
+        if not interaction.response.is_done():
+            try:
+                await interaction.response.defer(thinking=False, ephemeral=True)
+            except Exception:
+                pass
+        embed = help_command.execute("slash", None)
+        await _dispatch_command_result(interaction, embed, fallback="Unable to display the help menu.")
+        return
+    
+    # For all other lookups, validate item_name
+    cleaned_query = (item_name or "").strip()
     if not cleaned_query:
         await _send_text_response(interaction, "Please provide a name to search.", ephemeral=True)
         return
@@ -165,112 +183,72 @@ async def _run_lookup_command(
         await _dispatch_command_result(interaction, error_embed, ephemeral_override=True)
         return
 
+    fallback_messages = {
+        equipment_command: "Equipment not found. Try another name.",
+        weapon_command: "Weapon not found. Try another name.",
+        talent_command: "Talent not found. Try another name.",
+        mantra_command: "Mantra not found. Try another name.",
+        outfit_command: "Outfit not found. Try another name.",
+        kit_command: "Kit not found. Please verify the share ID.",
+    }
+    fallback = fallback_messages.get(module, "Item not found.")
+    
     await _dispatch_command_result(interaction, result, fallback=fallback)
 
 
 @tree.command(name="help", description="Show the Analytic Deepwoken help menu.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def help_slash_command(interaction: discord.Interaction):
-    if not interaction.response.is_done():
-        try:
-            await interaction.response.defer(thinking=False, ephemeral=True)
-        except Exception:
-            pass
-    embed = help_command.execute("slash", None)
-    await _dispatch_command_result(interaction, embed, fallback="Unable to display the help menu.")
+    from slash_commands.lookups import execute_help
+    await execute_help(interaction)
 
 
 @tree.command(name="equipment", description="Look up equipment details by name.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(name="Full or partial equipment name")
 async def equipment_slash_command(interaction: discord.Interaction, name: str):
-    await _run_lookup_command(
-        interaction,
-        equipment_command,
-        name,
-        fallback="Equipment not found. Try another name.",
-    )
+    from slash_commands.lookups import execute_equipment
+    await execute_equipment(interaction, name)
 
 
 @tree.command(name="weapon", description="Look up weapon details by name.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(name="Full or partial weapon name")
 async def weapon_slash_command(interaction: discord.Interaction, name: str):
-    await _run_lookup_command(
-        interaction,
-        weapon_command,
-        name,
-        fallback="Weapon not found. Try another name.",
-    )
+    from slash_commands.lookups import execute_weapon
+    await execute_weapon(interaction, name)
 
 
 @tree.command(name="talent", description="Look up talent details by name.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(name="Full or partial talent name")
 async def talent_slash_command(interaction: discord.Interaction, name: str):
-    await _run_lookup_command(
-        interaction,
-        talent_command,
-        name,
-        fallback="Talent not found. Try another name.",
-    )
+    from slash_commands.lookups import execute_talent
+    await execute_talent(interaction, name)
 
 
 @tree.command(name="mantra", description="Look up mantra details by name.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(name="Full or partial mantra name")
 async def mantra_slash_command(interaction: discord.Interaction, name: str):
-    await _run_lookup_command(
-        interaction,
-        mantra_command,
-        name,
-        fallback="Mantra not found. Try another name.",
-    )
+    from slash_commands.lookups import execute_mantra
+    await execute_mantra(interaction, name)
 
 
 @tree.command(name="outfit", description="Look up outfit details by name.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(name="Full or partial outfit name")
 async def outfit_slash_command(interaction: discord.Interaction, name: str):
-    await _run_lookup_command(
-        interaction,
-        outfit_command,
-        name,
-        fallback="Outfit not found. Try another name.",
-    )
+    from slash_commands.lookups import execute_outfit
+    await execute_outfit(interaction, name)
 
 
 @tree.command(name="kit", description="Look up kit details by share ID.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(kit_id="Kit share ID from the Deepwoken planner")
 async def kit_slash_command(interaction: discord.Interaction, kit_id: str):
-    cleaned = (kit_id or "").strip()
-    if not cleaned:
-        await _send_text_response(interaction, "Please provide a kit share ID.", ephemeral=True)
-        return
-
-    if not interaction.response.is_done():
-        try:
-            await interaction.response.defer(thinking=True, ephemeral=True)
-        except Exception:
-            pass
-
-    try:
-        result = kit_command.execute(cleaned, None)
-    except Exception as exc:
-        error_embed = discord.Embed(
-            title="Kit lookup failed",
-            description=f"An unexpected error occurred: {exc}",
-            color=0xED4245,
-        )
-        await _dispatch_command_result(interaction, error_embed, ephemeral_override=True)
-        return
-
-    await _dispatch_command_result(
-        interaction,
-        result,
-        fallback="Kit not found. Please verify the share ID.",
-    )
+    from slash_commands.lookups import execute_kit
+    await execute_kit(interaction, kit_id)
 
 
 language_choices = [
@@ -287,47 +265,35 @@ async def language_slash_command(
     interaction: discord.Interaction,
     language_code: Optional[app_commands.Choice[str]] = None,
 ):
-    # Language management can be quick, but defer to be safe and to unify UX
-    if not interaction.response.is_done():
-        try:
-            await interaction.response.defer(thinking=False, ephemeral=True)
-        except Exception:
-            pass
-    if interaction.guild is None:
-        await _send_text_response(
-            interaction,
-            "This command can only be used inside a server.",
-            ephemeral=True,
-        )
-        return
+    from slash_commands.lookups import execute_language
+    await execute_language(interaction, language_code)
 
-    member = interaction.user if isinstance(interaction.user, discord.Member) else interaction.guild.get_member(interaction.user.id)
-    if not member or not member.guild_permissions.administrator:
-        await _send_text_response(
-            interaction,
-            "Only server administrators can change the bot language.",
-            ephemeral=True,
-        )
-        return
 
-    if language_code is None:
-        info_embed = discord.Embed(
-            title="Language Settings",
-            description="Select a language to apply. Available options: English (`/language English`) or Spanish (`/language Spanish`).",
-            color=0x5865F2,
-        )
-        await _dispatch_command_result(interaction, info_embed)
-        return
+@tree.command(name="ehp", description="Calculate Effective Health Points for a Deepwoken build.")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.describe(
+    kit_id="Optional: Kit share ID to add HP from equipment",
+    build_link="Optional: Deepwoken builder link (or reply to a message with a build link)"
+)
+async def ehp_slash_command(interaction: discord.Interaction, kit_id: Optional[str] = None, build_link: Optional[str] = None):
+    from slash_commands.ehp import execute
+    await execute(interaction, kit_id, build_link)
 
-    language_command.set_language_for_guild(interaction.guild.id, language_code.value)
 
-    lang_display = "English" if language_code.value == 'en' else "Spanish"
-    confirmation = discord.Embed(
-        title="Language Updated",
-        description=f"The bot will now respond in **{lang_display}** for this server.",
-        color=0x57F287,
-    )
-    await _dispatch_command_result(interaction, confirmation, ephemeral_override=True)
+@tree.command(name="stats", description="Display stat evolution diagram for a Deepwoken build.")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.describe(build_link="Optional: Deepwoken builder link (or reply to a message with a build link)")
+async def stats_slash_command(interaction: discord.Interaction, build_link: Optional[str] = None):
+    from slash_commands.stats import execute
+    await execute(interaction, build_link)
+
+
+@tree.command(name="validate", description="Validate a Deepwoken build against the Deepleague rulebook.")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.describe(build_link="Optional: Deepwoken builder link (or reply to a message with a build link)")
+async def validate_slash_command(interaction: discord.Interaction, build_link: Optional[str] = None):
+    from slash_commands.validate import execute
+    await execute(interaction, build_link)
 
 # Try to pre-load commands at startup, but don't crash the bot if it fails
 try:
