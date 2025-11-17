@@ -105,6 +105,11 @@ def plot_breakdown(build, talentBase, params={'dps':100, 'pen':50, 'kithp':112, 
     # Lazy import matplotlib
     import matplotlib
     matplotlib.use('Agg')
+    # Reduce matplotlib logging noise in some environments
+    try:
+        matplotlib.set_loglevel("error")
+    except Exception:
+        pass
     import matplotlib.pyplot as plt
     
     # Register custom fonts
@@ -158,8 +163,10 @@ def plot_breakdown(build, talentBase, params={'dps':100, 'pen':50, 'kithp':112, 
     plt.box(False)
     
     buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight')
-    buf.seek(0)
-    plt.close()
+    try:
+        plt.savefig(buf, format='png', bbox_inches='tight')
+    finally:
+        buf.seek(0)
+        plt.close()
     
     return buf

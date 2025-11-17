@@ -35,11 +35,18 @@ from _HANDLERS.dataManager import searchTableByName
 
 load_dotenv()
 
+_HEALTH_SERVER_STARTED = False
+
 # Health check server
 def start_health_server():
+    global _HEALTH_SERVER_STARTED
+    if _HEALTH_SERVER_STARTED:
+        return
+    _HEALTH_SERVER_STARTED = True
+
     port = int(os.getenv("PORT", "10000"))
     external_base = os.getenv("RENDER_EXTERNAL_URL") or os.getenv("EXTERNAL_URL")
-    
+
     class HealthHandler(BaseHTTPRequestHandler):
         def _log_uptime_ping(self):
             proto = self.headers.get("X-Forwarded-Proto", "").lower()
@@ -63,7 +70,7 @@ def start_health_server():
                 self._log_uptime_ping()
             else:
                 self.end_headers()
-        
+
         def do_HEAD(self):
             self.send_response(200 if self.path in ("/", "/health") else 404)
             if self.path in ("/", "/health"):
@@ -71,17 +78,31 @@ def start_health_server():
             self.end_headers()
             if self.path in ("/", "/health"):
                 self._log_uptime_ping()
-        
+
         log_message = lambda self, *args: None
-    
-    server = HTTPServer(("0.0.0.0", port), HealthHandler)
+
+    # Allow socket reuse when possible
+    class ReusableHTTPServer(HTTPServer):
+        allow_reuse_address = True
+
+    try:
+        server = ReusableHTTPServer(("0.0.0.0", port), HealthHandler)
+    except OSError as e:
+        # Likely "[Errno 98] Address already in use" or platform equivalent; don't crash the bot.
+        print(f"Health server not started: {e}")
+        return
+
     if external_base:
         print(
             f"Health server running on port {port} (paths: /, /health) | External endpoints: {external_base}/ , {external_base}/health"
         )
     else:
         print(f"Health server running on port {port} (paths: /, /health)")
-    server.serve_forever()
+
+    try:
+        server.serve_forever()
+    except Exception as e:
+        print(f"Health server stopped: {e}")
 
 threading.Thread(target=start_health_server, daemon=True).start()
 

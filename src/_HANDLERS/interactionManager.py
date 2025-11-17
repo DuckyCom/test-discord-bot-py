@@ -11,7 +11,11 @@ class interactionManager:
 
     def processReply(self, message):
         reply = message.content.strip()
-        command_file = os.path.join(self.COMMANDPATH, f"{reply}.py")
+        # Parse command and optional argument(s)
+        parts = reply.split()
+        command = parts[0].lower() if parts else ""
+        args = parts[1:]
+        command_file = os.path.join(self.COMMANDPATH, f"{command}.py")
 
         # Get guild_id for language support
         guild_id = message.guild.id if message.guild else None
@@ -27,12 +31,17 @@ class interactionManager:
             return (None, None)
 
         if os.path.isfile(command_file):
-            spec = importlib.util.spec_from_file_location(reply, command_file)
+            spec = importlib.util.spec_from_file_location(command, command_file)
             command_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(command_module)
 
             if hasattr(command_module, 'execute'):
-                result = command_module.execute(build, guild_id)
+                # Special-case: ehp supports optional kit_id argument like: "ehp {kit_id}"
+                if command == 'ehp' and len(args) >= 1:
+                    kit_id = args[0]
+                    result = command_module.execute(build, guild_id, kit_id=kit_id)
+                else:
+                    result = command_module.execute(build, guild_id)
                 # If the result is already a tuple, return as is; else wrap in (result, None)
                 if isinstance(result, tuple) and len(result) == 2:
                     return result
