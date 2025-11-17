@@ -7,13 +7,24 @@ import discord
 import os
 import asyncio
 import threading
+from typing import Optional
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from dotenv import load_dotenv
+from discord import app_commands
 
 from _HANDLERS.commandManager import commandManager
 from _HANDLERS.interactionManager import interactionManager
 from _HANDLERS.clopenManager import channelManager
 from utils.language_manager import language_manager
+
+from commands import equipment as equipment_command
+from commands import help as help_command
+from commands import kit as kit_command
+from commands import language as language_command
+from commands import mantra as mantra_command
+from commands import outfit as outfit_command
+from commands import talent as talent_command
+from commands import weapon as weapon_command
 
 load_dotenv()
 
@@ -74,6 +85,8 @@ intents.guilds = True
 intents.reactions = True
 
 client = discord.Client(intents=intents)
+tree = app_commands.CommandTree(client)
+_slash_synced = False
 
 # Initialize managers
 cmd_manager = commandManager(client)
@@ -84,6 +97,200 @@ clopen_manager = channelManager(client)
 client.clopen_manager = clopen_manager
 cmd_manager.clopen_manager = clopen_manager
 
+
+async def _send_text_response(interaction: discord.Interaction, content: str, *, ephemeral: bool = True):
+    if interaction.response.is_done():
+        await interaction.followup.send(content, ephemeral=ephemeral)
+    else:
+        await interaction.response.send_message(content, ephemeral=ephemeral)
+
+
+async def _dispatch_command_result(
+    interaction: discord.Interaction,
+    result,
+    *,
+    fallback: str = "No data was returned.",
+    ephemeral_override: Optional[bool] = None,
+):
+    if isinstance(result, tuple):
+        embed, meta = result
+    else:
+        embed, meta = result, None
+
+    ephemeral = ephemeral_override if ephemeral_override is not None else bool(meta and meta.get('auto_delete'))
+
+    if not embed:
+        await _send_text_response(interaction, fallback, ephemeral=True)
+        return
+
+    if interaction.response.is_done():
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
+    else:
+        await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
+
+
+async def _run_lookup_command(
+    interaction: discord.Interaction,
+    module,
+    query: str,
+    *,
+    fallback: str,
+):
+    cleaned_query = (query or "").strip()
+    if not cleaned_query:
+        await _send_text_response(interaction, "Please provide a name to search.", ephemeral=True)
+        return
+
+    try:
+        result = module.execute(cleaned_query, None)
+    except Exception as exc:
+        error_embed = discord.Embed(
+            title="Lookup failed",
+            description=f"An unexpected error occurred: {exc}",
+            color=0xED4245,
+        )
+        await _dispatch_command_result(interaction, error_embed, ephemeral_override=True)
+        return
+
+    await _dispatch_command_result(interaction, result, fallback=fallback)
+
+
+@tree.command(name="help", description="Show the Analytic Deepwoken help menu.")
+async def help_slash_command(interaction: discord.Interaction):
+    embed = help_command.execute("slash", None)
+    await _dispatch_command_result(interaction, embed, fallback="Unable to display the help menu.")
+
+
+@tree.command(name="equipment", description="Look up equipment details by name.")
+@app_commands.describe(name="Full or partial equipment name")
+async def equipment_slash_command(interaction: discord.Interaction, name: str):
+    await _run_lookup_command(
+        interaction,
+        equipment_command,
+        name,
+        fallback="Equipment not found. Try another name.",
+    )
+
+
+@tree.command(name="weapon", description="Look up weapon details by name.")
+@app_commands.describe(name="Full or partial weapon name")
+async def weapon_slash_command(interaction: discord.Interaction, name: str):
+    await _run_lookup_command(
+        interaction,
+        weapon_command,
+        name,
+        fallback="Weapon not found. Try another name.",
+    )
+
+
+@tree.command(name="talent", description="Look up talent details by name.")
+@app_commands.describe(name="Full or partial talent name")
+async def talent_slash_command(interaction: discord.Interaction, name: str):
+    await _run_lookup_command(
+        interaction,
+        talent_command,
+        name,
+        fallback="Talent not found. Try another name.",
+    )
+
+
+@tree.command(name="mantra", description="Look up mantra details by name.")
+@app_commands.describe(name="Full or partial mantra name")
+async def mantra_slash_command(interaction: discord.Interaction, name: str):
+    await _run_lookup_command(
+        interaction,
+        mantra_command,
+        name,
+        fallback="Mantra not found. Try another name.",
+    )
+
+
+@tree.command(name="outfit", description="Look up outfit details by name.")
+@app_commands.describe(name="Full or partial outfit name")
+async def outfit_slash_command(interaction: discord.Interaction, name: str):
+    await _run_lookup_command(
+        interaction,
+        outfit_command,
+        name,
+        fallback="Outfit not found. Try another name.",
+    )
+
+
+@tree.command(name="kit", description="Look up kit details by share ID.")
+@app_commands.describe(kit_id="Kit share ID from the Deepwoken planner")
+async def kit_slash_command(interaction: discord.Interaction, kit_id: str):
+    cleaned = (kit_id or "").strip()
+    if not cleaned:
+        await _send_text_response(interaction, "Please provide a kit share ID.", ephemeral=True)
+        return
+
+    try:
+        result = kit_command.execute(cleaned, None)
+    except Exception as exc:
+        error_embed = discord.Embed(
+            title="Kit lookup failed",
+            description=f"An unexpected error occurred: {exc}",
+            color=0xED4245,
+        )
+        await _dispatch_command_result(interaction, error_embed, ephemeral_override=True)
+        return
+
+    await _dispatch_command_result(
+        interaction,
+        result,
+        fallback="Kit not found. Please verify the share ID.",
+    )
+
+
+language_choices = [
+    app_commands.Choice(name="English", value="en"),
+    app_commands.Choice(name="Spanish", value="es"),
+]
+
+
+@tree.command(name="language", description="Configure the bot language for this server.")
+@app_commands.describe(language_code="Language to apply (English or Spanish)")
+@app_commands.choices(language_code=language_choices)
+async def language_slash_command(
+    interaction: discord.Interaction,
+    language_code: Optional[app_commands.Choice[str]] = None,
+):
+    if interaction.guild is None:
+        await _send_text_response(
+            interaction,
+            "This command can only be used inside a server.",
+            ephemeral=True,
+        )
+        return
+
+    member = interaction.user if isinstance(interaction.user, discord.Member) else interaction.guild.get_member(interaction.user.id)
+    if not member or not member.guild_permissions.administrator:
+        await _send_text_response(
+            interaction,
+            "Only server administrators can change the bot language.",
+            ephemeral=True,
+        )
+        return
+
+    if language_code is None:
+        info_embed = discord.Embed(
+            title="Language Settings",
+            description="Select a language to apply. Available options: English (`/language English`) or Spanish (`/language Spanish`).",
+            color=0x5865F2,
+        )
+        await _dispatch_command_result(interaction, info_embed)
+        return
+
+    language_command.set_language_for_guild(interaction.guild.id, language_code.value)
+
+    lang_display = "English" if language_code.value == 'en' else "Spanish"
+    confirmation = discord.Embed(
+        title="Language Updated",
+        description=f"The bot will now respond in **{lang_display}** for this server.",
+        color=0x57F287,
+    )
+    await _dispatch_command_result(interaction, confirmation, ephemeral_override=True)
+
 # Try to pre-load commands at startup, but don't crash the bot if it fails
 try:
     cmd_manager.loadCommands()
@@ -92,6 +299,16 @@ except Exception as e:
 
 @client.event
 async def on_ready():
+    global _slash_synced
+    if not _slash_synced:
+        try:
+            synced = await tree.sync()
+            print(f"Synced {len(synced)} slash commands globally")
+        except Exception as e:
+            print(f"Warning: failed to sync slash commands: {e}")
+        else:
+            _slash_synced = True
+
     print(f'Bot ready as {client.user}')
     
     # Load clopen configuration

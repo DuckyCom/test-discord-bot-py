@@ -77,6 +77,23 @@
 
 ## Commands
 
+### Slash Commands (Global, English only)
+
+All lookup and utility commands (except channel management) are now available as global slash commands, so you can use them anywhere the application is authorized:
+
+| Command | Description |
+| --- | --- |
+| `/help` | Shows the Analytic Deepwoken help menu. |
+| `/equipment <name>` | Look up equipment stats by name. |
+| `/weapon <name>` | Look up weapon stats by name. |
+| `/talent <name>` | Look up talent information by name. |
+| `/mantra <name>` | Look up mantra details by name. |
+| `/outfit <name>` | Look up outfit data by name. |
+| `/kit <kit_id>` | Fetch kit details by share ID. |
+| `/language <en\|es>` | (Server admins) set the bot language for the current server. |
+
+> `clopen` and `close` remain prefix-only because they depend on guild-specific channel management.
+
 ### General Commands
 
 | Command        | Description                                  |
