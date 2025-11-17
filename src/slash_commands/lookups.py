@@ -5,6 +5,7 @@ import discord
 from discord import app_commands
 from typing import Optional
 
+from .shared import send_text_response, dispatch_command_result
 import commands.help as help_command
 import commands.equipment as equipment_command
 import commands.weapon as weapon_command
@@ -60,8 +61,6 @@ async def execute_kit(interaction: discord.Interaction, kit_name: str):
 
 async def execute_language(interaction: discord.Interaction, language_code: Optional[app_commands.Choice[str]] = None):
     """Execute the /language command."""
-    from bot import _send_text_response, _dispatch_command_result
-    
     # Language management can be quick, but defer to be safe and to unify UX
     if not interaction.response.is_done():
         try:
@@ -70,7 +69,7 @@ async def execute_language(interaction: discord.Interaction, language_code: Opti
             pass
     
     if interaction.guild is None:
-        await _send_text_response(
+        await send_text_response(
             interaction,
             "This command can only be used inside a server.",
             ephemeral=True,
@@ -79,7 +78,7 @@ async def execute_language(interaction: discord.Interaction, language_code: Opti
 
     member = interaction.user if isinstance(interaction.user, discord.Member) else interaction.guild.get_member(interaction.user.id)
     if not member or not member.guild_permissions.administrator:
-        await _send_text_response(
+        await send_text_response(
             interaction,
             "Only server administrators can change the bot language.",
             ephemeral=True,
@@ -92,7 +91,7 @@ async def execute_language(interaction: discord.Interaction, language_code: Opti
             description="Select a language to apply. Available options: English (`/language English`) or Spanish (`/language Spanish`).",
             color=0x5865F2,
         )
-        await _dispatch_command_result(interaction, info_embed)
+        await dispatch_command_result(interaction, info_embed)
         return
 
     language_command.set_language_for_guild(interaction.guild.id, language_code.value)
@@ -103,4 +102,4 @@ async def execute_language(interaction: discord.Interaction, language_code: Opti
         description=f"The bot will now respond in **{lang_display}** for this server.",
         color=0x57F287,
     )
-    await _dispatch_command_result(interaction, confirmation, ephemeral_override=True)
+    await dispatch_command_result(interaction, confirmation, ephemeral_override=True)

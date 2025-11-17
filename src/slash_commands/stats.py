@@ -2,19 +2,16 @@
 /stats slash command - Display build stats for a Deepwoken build
 """
 import discord
-from discord import app_commands
 from typing import Optional
 
 from .helpers import extract_build_id, get_build_link_from_reply, send_missing_link_error
+from .shared import dispatch_command_result
 import plugins._DWBAPIWRAPPER as dwb
 import interactions.stats as stats_interaction
 
 
 async def execute(interaction: discord.Interaction, build_link: Optional[str] = None):
     """Execute the /stats command."""
-    # Import here to avoid circular dependency
-    from bot import _dispatch_command_result
-    
     if not interaction.response.is_done():
         try:
             await interaction.response.defer(thinking=True, ephemeral=False)
@@ -38,7 +35,7 @@ async def execute(interaction: discord.Interaction, build_link: Optional[str] = 
             description=f"Could not load build from the provided link. Make sure it's a valid Deepwoken builder URL.\n\nError: {exc}",
             color=0xED4245,
         )
-        await _dispatch_command_result(interaction, error_embed, ephemeral_override=True)
+        await dispatch_command_result(interaction, error_embed, ephemeral_override=True)
         return
 
     try:
@@ -53,4 +50,4 @@ async def execute(interaction: discord.Interaction, build_link: Optional[str] = 
             description=f"An error occurred while calculating stats.\n\nError: {exc}",
             color=0xED4245,
         )
-        await _dispatch_command_result(interaction, error_embed, ephemeral_override=True)
+        await dispatch_command_result(interaction, error_embed, ephemeral_override=True)

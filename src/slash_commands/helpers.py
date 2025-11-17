@@ -3,6 +3,7 @@ Helper utilities for slash commands
 """
 import discord
 from typing import Optional
+from .shared import dispatch_command_result
 
 
 def extract_build_id(build_link: str) -> str:
@@ -43,8 +44,6 @@ async def get_build_link_from_reply(interaction: discord.Interaction, build_link
 
 async def send_missing_link_error(interaction: discord.Interaction, command_name: str):
     """Send a helpful error when no build link is found."""
-    from bot import _dispatch_command_result
-    
     error_embed = discord.Embed(
         title="Missing Build Link",
         description=(
@@ -54,4 +53,5 @@ async def send_missing_link_error(interaction: discord.Interaction, command_name
         ),
         color=0xED4245,
     )
-    await _dispatch_command_result(interaction, error_embed, ephemeral_override=True)
+    await dispatch_command_result(interaction, error_embed, ephemeral_override=True)
+
